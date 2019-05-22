@@ -1,0 +1,164 @@
+<?php
+
+use Drupal\scss_compiler\ScssCompiler;
+use Drupal\Core\Asset\AttachedAssetsInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Link;
+use Drupal\Core\Url;
+
+/**
+ * Implements hook_requirements().
+ */
+function scss_compiler_requirements($phase) {
+  $requirements = [];
+
+  if ($phase === 'runtime') {
+    $description = '';
+    if (!$installed = file_exists(DRUPAL_ROOT . '/libraries/scssphp/scss.inc.php')) {
+      $description = 'SCSS compiler library not found. ' . Link::fromTextAndUrl('Download', Url::fromUri('https://github.com/leafo/scssphp/releases', ['external' => true]))->toString();
+    }
+    $requirements['scss_compiler'] = [
+      'title'       => t('SCSS Compiler library'),
+      'value'       => $installed ? 'Installed' : 'Not installed',
+      'severity'    => $installed ? REQUIREMENT_OK : REQUIREMENT_ERROR,
+      'description' => [
+        '#type'     => 'markup',
+        '#markup'   => $description
+      ]
+    ];
+  }
+  return $requirements;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function scss_compiler_form_system_performance_settings_alter(&$form, FormStateInterface $form_state, $form_id) {
+
+  $form['scss_compiler'] = [
+    '#type' => 'details',
+    '#title' => t('SCSS Compiler'),
+    '#open' => TRUE,
+    '#weight' => 0
+  ];
+
+  $form['scss_compiler']['scss_cache'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Enable SCSS cache'),
+    '#default_value' => \Drupal::service('scss_compiler')->isCacheEnabled()
+  ];
+
+  $form['scss_compiler']['advanced'] = [
+    '#type' => 'details',
+    '#title' => t('Advanced')
+  ];
+
+  $form['scss_compiler']['advanced']['scss_sourcemaps'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Enable SCSS sourcemaps'),
+    '#default_value' => \Drupal::service('scss_compiler')->isSourcemapEnabled()
+  ];
+
+  $form['scss_compiler']['advanced']['recompile'] = [
+    '#type'  => 'button',
+    '#value' => t('Recompile')
+  ];
+
+  $form['#submit'][] = 'scss_compiler_system_performance_settings_submit';
+
+}
+
+/**
+ * Save scss compiler settings on form submit
+ */
+function scss_compiler_system_performance_settings_submit(&$form, FormStateInterface $form_state) {
+  \Drupal::service('config.factory')->getEditable('scss_compiler.settings')
+    ->set('cache', $form_state->getValue('scss_cache'))
+    ->set('sourcemaps', $form_state->getValue('scss_sourcemaps'))
+    ->save();
+}
+
+/**
+ * Implements hook_library_info_alter().
+ */
+function scss_compiler_library_info_alter(&$libraries, $extension) {
+  foreach ($libraries as &$library) {
+    if (isset($library['css'])) {
+      foreach ($library['css'] as &$group) {
+        foreach ($group as $key => &$file) {
+          if (pathinfo($key, PATHINFO_EXTENSION) === 'scss') {
+            $file['namespace'] = $extension;
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function scss_compiler_module_implements_alter(&$implementations, $hook) {
+  if ($hook === 'css_alter') {
+    $implementation = $implementations['scss_compiler'];
+    unset($implementations['scss_compiler']);
+    $implementations['scss_compiler'] = $implementation;
+  }
+}
+
+/**
+ * Implements hook_css_alter().
+ */
+function scss_compiler_css_alter(&$css, AttachedAssetsInterface $assets) {
+  $scss_files = [];
+  foreach ($css as $path => $file) {
+    if (pathinfo($path, PATHINFO_EXTENSION) === 'scss') {
+      if (!isset($file['namespace'])) $file['namespace'] = Drupal::service('scss_compiler')->getDefaultNamespace();
+      if (isset($file['css_path'])) {
+        $file['css_path'] = $file['css_path'] . '/' . pathinfo($path, PATHINFO_FILENAME) . '.css';
+      } else {
+        $file['css_path'] = Drupal::service('scss_compiler')->getCacheFolder() . '/' . $file['namespace'] . '/' . pathinfo($path, PATHINFO_FILENAME) . '.css';
+      }
+      $scss_file = [
+        'name'           => pathinfo($path, PATHINFO_FILENAME),
+        'namespace'      => $file['namespace'],
+        'scss_path'      => $path,
+        'css_path'       => $file['css_path']
+      ];
+      $scss_files[$scss_file['namespace']][$scss_file['name']] = $scss_file;
+      if (!file_exists($scss_file['css_path'])) {
+        Drupal::service('scss_compiler')->compile($scss_file);
+      }
+      unset($css[$path]);
+      $css[$scss_file['css_path']] = $file;
+      $css[$scss_file['css_path']]['data'] = $scss_file['css_path'];
+    }
+  }
+  Drupal::service('scss_compiler')->setCompileList($scss_files);
+}
+
+/**
+ * Implements hook_page_attachments_alter().
+ */
+function scss_compiler_page_attachments_alter(array &$attachments) {
+  if (!\Drupal::service('scss_compiler')->isCacheEnabled()) {
+    $scss_files = Drupal::service('scss_compiler')->getCompileList();
+    if (!empty($scss_files)) {
+      foreach ($scss_files as $namespace) {
+        foreach ($namespace as $scss_file) {
+          Drupal::service('scss_compiler')->compile($scss_file);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_cache_flush().
+ */
+function scss_compiler_cache_flush() {
+  if (!\Drupal::service('scss_compiler')->isCacheEnabled()) {
+	  file_unmanaged_delete_recursive(Drupal::service('scss_compiler')->getCacheFolder());
+  }
+  file_unmanaged_delete_recursive(drupal_get_path('module', 'scss_compiler') . '/settings');
+}
