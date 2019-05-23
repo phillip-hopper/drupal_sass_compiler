@@ -1,10 +1,10 @@
 <?php
 
-use Drupal\scss_compiler\ScssCompiler;
 use Drupal\Core\Asset\AttachedAssetsInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
+use Drupal\scss_compiler\ScssCompilerService;
 
 /**
  * Implements hook_requirements().
@@ -60,12 +60,18 @@ function scss_compiler_form_system_performance_settings_alter(&$form, FormStateI
   ];
 
   $form['scss_compiler']['advanced']['recompile'] = [
-    '#type'  => 'button',
-    '#value' => t('Recompile')
+    '#type'  => 'submit',
+    '#value' => t('Recompile'),
+    '#submit' => ['scss_compiler_recompile'],
   ];
 
   $form['#submit'][] = 'scss_compiler_system_performance_settings_submit';
 
+}
+
+function scss_compiler_recompile() {
+  \Drupal::service('scss_compiler')->compileAll(true);
+  \Drupal::service('messenger')->addStatus(('SCSS files recompiled.'));
 }
 
 /**
@@ -142,14 +148,7 @@ function scss_compiler_css_alter(&$css, AttachedAssetsInterface $assets) {
  */
 function scss_compiler_page_attachments_alter(array &$attachments) {
   if (!\Drupal::service('scss_compiler')->isCacheEnabled()) {
-    $scss_files = Drupal::service('scss_compiler')->getCompileList();
-    if (!empty($scss_files)) {
-      foreach ($scss_files as $namespace) {
-        foreach ($namespace as $scss_file) {
-          Drupal::service('scss_compiler')->compile($scss_file);
-        }
-      }
-    }
+    Drupal::service('scss_compiler')->compileAll();
   }
 }
 

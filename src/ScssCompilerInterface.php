@@ -16,12 +16,25 @@ interface ScssCompilerInterface {
   public function compile($scss_file);
 
   /**
+   * Compiles all scss files which was registered
+   * 
+   * @param bool $all
+   *   If true compile all scss files from all themes in system,
+   *   else compile only scss files from active theme
+   */
+  public function compileAll($all);
+
+  /**
    * Return list of scss files which need to be recompiled
+   * 
+   * @param bool $all
+   *   If true load all scss files from all themes in system,
+   *   else load only scss files from active theme
    * 
    * @return array
    *   An associative array with scss files info
    */
-  public function getCompileList();
+  public function getCompileList($all);
 
   /**
    * Save list of scss files which need to be recompiled to json settings file

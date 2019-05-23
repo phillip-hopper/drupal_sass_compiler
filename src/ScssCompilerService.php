@@ -7,6 +7,9 @@ use Drupal\Core\Theme\ThemeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
+/**
+* Defines a class for scss compiler service.
+*/
 class ScssCompilerService implements ScssCompilerInterface {
 
   /**
@@ -91,7 +94,6 @@ class ScssCompilerService implements ScssCompilerInterface {
     $this->request = $request_stack->getCurrentRequest();
 
     $this->activeThemeName = $theme_manager->getActiveTheme()->getName();
-
     $this->cacheFolder = 'public://scss_compiler';
     $this->isCacheEnabled = $this->config->get('cache');
     $this->isSourcemapEnabled = $this->config->get('sourcemaps');
@@ -143,13 +145,39 @@ class ScssCompilerService implements ScssCompilerInterface {
   /**
    * {@inheritdoc}
    */
-  public function getCompileList() {
-    $settings_path = drupal_get_path('module', 'scss_compiler') . '/settings/' . $this->activeThemeName . '.json';
-    $scss_files = '';
-    if (file_exists($settings_path)) {
-      $scss_files = file_get_contents($settings_path);
+  public function getCompileList($all = false) {
+    if ($all) {
+      // @todo replace json files to drupal cache system
+      // load all json files with scss info and merge it to remove duplicates
+      $settings_path = drupal_get_path('module', 'scss_compiler') . '/settings/*.json';
+      $files = [];
+      foreach (glob($settings_path) as $file) {
+        $content = file_get_contents($file);
+        $files[] = json_decode($content, true);
+      }
+      return array_merge_recursive(...$files);
+    } else {
+      $settings_path = drupal_get_path('module', 'scss_compiler') . '/settings/' . $this->activeThemeName . '.json';
+      $scss_files = '';
+      if (file_exists($settings_path)) {
+        $scss_files = file_get_contents($settings_path);
+      }
+      return json_decode($scss_files, true);
     }
-    return json_decode($scss_files, true);
+  }
+
+  /**
+  * {@inheritdoc}
+  */
+  public function compileAll($all = false) {
+    $scss_files = $this->getCompileList($all);
+    if (!empty($scss_files)) {
+      foreach ($scss_files as $namespace) {
+        foreach ($namespace as $scss_file) {
+          $this->compile($scss_file);
+        }
+      }
+    }
   }
 
   /**
@@ -192,7 +220,8 @@ class ScssCompilerService implements ScssCompilerInterface {
       ]);
 
       $parser->drupal_path = $theme_folder . '/';
-      $parser->setEncoding(true);  //disable utf-8 support to increse performance
+      //disable utf-8 support to increase performance
+      $parser->setEncoding(true);
       if ($this->isSourcemapEnabled) {
         $parser->setSourceMap(Compiler::SOURCE_MAP_FILE);
         $host = $this->request->getSchemeAndHttpHost();
