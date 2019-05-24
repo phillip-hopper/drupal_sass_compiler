@@ -4,20 +4,21 @@ namespace Drupal\scss_compiler;
 
 use Leafo\ScssPhp\Compiler as LeafoCompiler;
 use Leafo\ScssPhp\Type;
-use Leafo\ScssPhp\Node;
+use Leafo\ScssPhp\Node\Number;
 
 /**
- * Extends Leafo ScssPhp Compiler and add path variable to 
- * handle static resource path relative to theme/module
+ * Extends Leafo Scssphp Compiler.
+ *
+ * Add path variable to handle static resource path relative to theme/module.
  */
 class Compiler extends LeafoCompiler {
 
   /**
-   * Path to theme/module
+   * Path to theme/module.
    *
    * @var string
    */
-  public $drupal_path = '';
+  public $drupalPath = '';
 
   /**
    * {@inheritdoc}
@@ -32,27 +33,27 @@ class Compiler extends LeafoCompiler {
         return $value[1];
 
       case Type::T_COLOR:
-        // [1] - red component (either number for a %)
-        // [2] - green component
-        // [3] - blue component
-        // [4] - optional alpha component
+        // [1] - red component (either number for a %);
+        // [2] - green component;
+        // [3] - blue component;
+        // [4] - optional alpha component.
         list(, $r, $g, $b) = $value;
 
         $r = round($r);
         $g = round($g);
         $b = round($b);
 
-        if (count($value) === 5 && $value[4] !== 1) { // rgba
-            $a = new Node\Number($value[4], '');
+        if (count($value) === 5 && $value[4] !== 1) {
+          $a = new Number($value[4], '');
 
-            return 'rgba(' . $r . ', ' . $g . ', ' . $b . ', ' . $a . ')';
+          return 'rgba(' . $r . ', ' . $g . ', ' . $b . ', ' . $a . ')';
         }
 
         $h = sprintf('#%02x%02x%02x', $r, $g, $b);
 
         // Converting hex color to short notation (e.g. #003399 to #039)
         if ($h[1] === $h[2] && $h[3] === $h[4] && $h[5] === $h[6]) {
-            $h = '#' . $h[1] . $h[3] . $h[5];
+          $h = '#' . $h[1] . $h[3] . $h[5];
         }
 
         return $h;
@@ -65,12 +66,13 @@ class Compiler extends LeafoCompiler {
 
       case Type::T_FUNCTION:
 
-        $args = ! empty($value[2]) ? $this->compileValue($value[2]) : '';
+        $args = !empty($value[2]) ? $this->compileValue($value[2]) : '';
 
         if ($value[1] == 'url') {
           $args = trim($args, '"\'');
-          return "$value[1]($this->drupal_path$args)";
-        } else {
+          return "$value[1]($this->drupalPath$args)";
+        }
+        else {
           return "$value[1]($args)";
         }
 
@@ -115,7 +117,7 @@ class Compiler extends LeafoCompiler {
         return '(' . implode(', ', $filtered) . ')';
 
       case Type::T_INTERPOLATED:
-        // node created by extractInterpolation
+        // Node created by extractInterpolation.
         list(, $interpolate, $left, $right) = $value;
         list(,, $whiteLeft, $whiteRight) = $interpolate;
 
@@ -128,10 +130,10 @@ class Compiler extends LeafoCompiler {
         return $left . $this->compileValue($interpolate) . $right;
 
       case Type::T_INTERPOLATE:
-        // raw parse node
+        // Raw parse node.
         list(, $exp) = $value;
 
-        // strip quotes if it's a string
+        // Strip quotes if it's a string.
         $reduced = $this->reduce($exp);
 
         switch ($reduced[0]) {
@@ -158,14 +160,14 @@ class Compiler extends LeafoCompiler {
               $temp = $this->compileValue([Type::T_KEYWORD, $item]);
               if ($temp[0] === Type::T_STRING) {
                 $filtered[] = $this->compileStringContent($temp);
-              } elseif ($temp[0] === Type::T_KEYWORD) {
+              }
+              elseif ($temp[0] === Type::T_KEYWORD) {
                 $filtered[] = $temp[1];
-              } else {
+              }
+              else {
                 $filtered[] = $this->compileValue($temp);
               }
             }
-
-
 
             $reduced = [Type::T_KEYWORD, implode("$delim", $filtered)];
             break;

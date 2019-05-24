@@ -6,10 +6,11 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Theme\ThemeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Drupal\Core\Cache\CacheBackendInterface;
 
 /**
-* Defines a class for scss compiler service.
-*/
+ * Defines a class for scss compiler service.
+ */
 class ScssCompilerService implements ScssCompilerInterface {
 
   /**
@@ -41,35 +42,42 @@ class ScssCompilerService implements ScssCompilerInterface {
   protected $request;
 
   /**
-   * Current theme name
+   * The default cache bin.
+   *
+   * @var \Drupal\Core\Cache\CacheBackendInterface
+   */
+  protected $cache;
+
+  /**
+   * Current theme name.
    *
    * @var string
    */
   protected $activeThemeName;
-  
+
   /**
-   * Compiler object instance
+   * Compiler object instance.
    *
    * @var \Drupal\scss_compiler\Compiler
    */
   protected $parser;
-  
+
   /**
-   * Path to cache folder
+   * Path to cache folder.
    *
    * @var string
    */
   protected $cacheFolder;
-  
+
   /**
-   * Flag if sourcemap enabled
+   * Flag if sourcemap enabled.
    *
    * @var bool
    */
   protected $isSourcemapEnabled;
 
   /**
-   * Flag if cache enabled
+   * Flag if cache enabled.
    *
    * @var bool
    */
@@ -86,12 +94,15 @@ class ScssCompilerService implements ScssCompilerInterface {
    *   The module handler class to use for check existing modules.
    * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
    *   The request stack.
+   * @param \Drupal\Core\Cache\CacheBackendInterface $cache
+   *   The default cache bin.
    */
-  public function __construct(ConfigFactoryInterface $config, ThemeManagerInterface $theme_manager, ModuleHandlerInterface $module_handler, RequestStack $request_stack) {
+  public function __construct(ConfigFactoryInterface $config, ThemeManagerInterface $theme_manager, ModuleHandlerInterface $module_handler, RequestStack $request_stack, CacheBackendInterface $cache) {
     $this->config = $config->get('scss_compiler.settings');
     $this->themeManager = $theme_manager;
     $this->moduleHandler = $module_handler;
     $this->request = $request_stack->getCurrentRequest();
+    $this->cache = $cache;
 
     $this->activeThemeName = $theme_manager->getActiveTheme()->getName();
     $this->cacheFolder = 'public://scss_compiler';
@@ -131,45 +142,45 @@ class ScssCompilerService implements ScssCompilerInterface {
    * {@inheritdoc}
    */
   public function setCompileList($files) {
-    $settings_path = drupal_get_path('module', 'scss_compiler') . '/settings';
-
-    if (file_prepare_directory($settings_path, FILE_CREATE_DIRECTORY)) {
-      $old_files = $this->getCompileList();
-      if (is_array($old_files)) {
-        $files = array_merge($old_files, $files);
+    // Save list of scss files which need to be recompiled to the cache.
+    // Each theme has own list of files, to prevent recompile files
+    // which not loaded in current theme.
+    $data = [];
+    if ($cache = $this->cache->get('scss_compiler_list')) {
+      $data = $cache->data;
+      if (!empty($data[$this->activeThemeName])) {
+        $old_files = $data[$this->activeThemeName];
+        if (is_array($old_files)) {
+          $files = array_merge($old_files, $files);
+        }
       }
-      file_put_contents($settings_path . '/' . $this->activeThemeName . '.json', json_encode($files));
     }
+    $data[$this->activeThemeName] = $files;
+    $this->cache->set('scss_compiler_list', $data, CacheBackendInterface::CACHE_PERMANENT);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getCompileList($all = false) {
-    if ($all) {
-      // @todo replace json files to drupal cache system
-      // load all json files with scss info and merge it to remove duplicates
-      $settings_path = drupal_get_path('module', 'scss_compiler') . '/settings/*.json';
-      $files = [];
-      foreach (glob($settings_path) as $file) {
-        $content = file_get_contents($file);
-        $files[] = json_decode($content, true);
+  public function getCompileList($all = FALSE) {
+    $files = [];
+    if ($cache = $this->cache->get('scss_compiler_list')) {
+      $data = $cache->data;
+      if ($all) {
+        $files = array_merge_recursive(...array_values($data));
       }
-      return array_merge_recursive(...$files);
-    } else {
-      $settings_path = drupal_get_path('module', 'scss_compiler') . '/settings/' . $this->activeThemeName . '.json';
-      $scss_files = '';
-      if (file_exists($settings_path)) {
-        $scss_files = file_get_contents($settings_path);
+      elseif (!empty($data[$this->activeThemeName])) {
+        $files = $data[$this->activeThemeName];
       }
-      return json_decode($scss_files, true);
     }
+
+    return $files;
   }
 
   /**
-  * {@inheritdoc}
-  */
-  public function compileAll($all = false) {
+   * {@inheritdoc}
+   */
+  public function compileAll($all = FALSE) {
     $scss_files = $this->getCompileList($all);
     if (!empty($scss_files)) {
       foreach ($scss_files as $namespace) {
@@ -184,9 +195,7 @@ class ScssCompilerService implements ScssCompilerInterface {
    * {@inheritdoc}
    */
   public function compile($scss_file) {
-
     try {
-
       if (!file_exists($scss_file['scss_path'])) {
         throw new \Exception('File ' . $scss_file['scss_path'] . ' not found');
       }
@@ -197,7 +206,7 @@ class ScssCompilerService implements ScssCompilerInterface {
       }
       $path = @drupal_get_path($type, $scss_file['namespace']);
       if (empty($path)) {
-        throw new \Exception($type . ' ' .  $scss_file['namespace'] . ' not found');
+        throw new \Exception($type . ' ' . $scss_file['namespace'] . ' not found');
       }
 
       $theme_folder = '/' . $path;
@@ -208,7 +217,7 @@ class ScssCompilerService implements ScssCompilerInterface {
           throw new \Exception('SCSS Compiler library not found. Visit status page for more information');
         }
         require_once DRUPAL_ROOT . '/libraries/scssphp/scss.inc.php';
-        $this->parser = $parser = new \Drupal\scss_compiler\Compiler();
+        $this->parser = $parser = new Compiler();
       }
 
       $parser->setImportPaths([
@@ -219,9 +228,9 @@ class ScssCompilerService implements ScssCompilerInterface {
         'theme' => $theme_folder,
       ]);
 
-      $parser->drupal_path = $theme_folder . '/';
-      //disable utf-8 support to increase performance
-      $parser->setEncoding(true);
+      $parser->drupalPath = $theme_folder . '/';
+      // Disable utf-8 support to increase performance.
+      $parser->setEncoding(TRUE);
       if ($this->isSourcemapEnabled) {
         $parser->setSourceMap(Compiler::SOURCE_MAP_FILE);
         $host = $this->request->getSchemeAndHttpHost();
@@ -236,7 +245,8 @@ class ScssCompilerService implements ScssCompilerInterface {
       $content = $parser->compile(file_get_contents($scss_file['scss_path']), $scss_file['scss_path']);
       file_put_contents($scss_file['css_path'], trim($content));
 
-    } catch (\Exception $e) {
+    }
+    catch (\Exception $e) {
       trigger_error($e->getMessage(), E_USER_ERROR);
     }
   }

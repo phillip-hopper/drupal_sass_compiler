@@ -1,0 +1,35 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the SCSS Compiler module.
+ */
+
+use Drupal\Core\Link;
+use Drupal\Core\Url;
+
+/**
+ * Implements hook_requirements().
+ */
+function scss_compiler_requirements($phase) {
+  $requirements = [];
+
+  if ($phase === 'runtime') {
+    $description = '';
+    if (!$installed = file_exists(DRUPAL_ROOT . '/libraries/scssphp/scss.inc.php')) {
+      $url = Url::fromUri('https://github.com/leafo/scssphp/releases', ['external' => TRUE]);
+      $link = Link::fromTextAndUrl('Download', $url);
+      $description = 'SCSS compiler library not found. ' . $link->toString();
+    }
+    $requirements['scss_compiler'] = [
+      'title'       => t('SCSS Compiler library'),
+      'value'       => $installed ? 'Installed' : 'Not installed',
+      'severity'    => $installed ? REQUIREMENT_OK : REQUIREMENT_ERROR,
+      'description' => [
+        '#type'     => 'markup',
+        '#markup'   => $description,
+      ],
+    ];
+  }
+  return $requirements;
+}

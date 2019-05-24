@@ -8,69 +8,69 @@ namespace Drupal\scss_compiler;
 interface ScssCompilerInterface {
 
   /**
-   * Compile single scss file into css
-   * 
+   * Compile single scss file into css.
+   *
    * @param array $scss_file
-   *   An associative array with scss file info
+   *   An associative array with scss file info.
    */
-  public function compile($scss_file);
+  public function compile(array $scss_file);
 
   /**
-   * Compiles all scss files which was registered
-   * 
+   * Compiles all scss files which was registered.
+   *
    * @param bool $all
    *   If true compile all scss files from all themes in system,
-   *   else compile only scss files from active theme
+   *   else compile only scss files from active theme.
    */
-  public function compileAll($all);
+  public function compileAll(bool $all);
 
   /**
-   * Return list of scss files which need to be recompiled
-   * 
+   * Return list of scss files which need to be recompiled.
+   *
    * @param bool $all
    *   If true load all scss files from all themes in system,
-   *   else load only scss files from active theme
-   * 
+   *   else load only scss files from active theme.
+   *
    * @return array
    *   An associative array with scss files info
    */
-  public function getCompileList($all);
+  public function getCompileList(bool $all);
 
   /**
-   * Save list of scss files which need to be recompiled to json settings file
-   * 
+   * Save list of scss files which need to be recompiled.
+   *
    * @param array $files
-   *   List of scss files
+   *   List of scss files.
    */
-  public function setCompileList($files);
+  public function setCompileList(array $files);
 
   /**
-   * Return info about cache
-   * 
+   * Return info about cache.
+   *
    * @return bool
    *   true if cache enabled else false
    */
   public function isCacheEnabled();
 
   /**
-   * Return info about sourcemap configuration
-   * 
+   * Return info about sourcemap configuration.
+   *
    * @return bool
    *   true if sourcemaps enabled else false
    */
   public function isSourcemapEnabled();
 
   /**
-   * Return path to cache folder where compiled file save
-   * 
+   * Return path to cache folder where compiled file save.
+   *
    * @return string
    *   Internal drupal path to cache folder
    */
   public function getCacheFolder();
 
   /**
-   * Return default namespace
-   * 
+   * Return default namespace.
+   *
    * @return string
    *   Namespace title
    */
