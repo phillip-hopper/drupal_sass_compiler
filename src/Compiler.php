@@ -26,16 +26,14 @@ class Compiler extends LeafoCompiler {
   public function compileValue($value) {
     $value = $this->reduce($value);
 
-    list($type) = $value;
-
-    switch ($type) {
+    switch ($value[0]) {
       case Type::T_KEYWORD:
         return $value[1];
 
       case Type::T_COLOR:
-        // [1] - red component (either number for a %);
-        // [2] - green component;
-        // [3] - blue component;
+        // [1] - red component (either number for a %)
+        // [2] - green component
+        // [3] - blue component
         // [4] - optional alpha component.
         list(, $r, $g, $b) = $value;
 
@@ -65,12 +63,16 @@ class Compiler extends LeafoCompiler {
         return $value[1] . $this->compileStringContent($value) . $value[1];
 
       case Type::T_FUNCTION:
-
         $args = !empty($value[2]) ? $this->compileValue($value[2]) : '';
 
-        if ($value[1] == 'url') {
+        if ($value[1] == 'url' && $args) {
           $args = trim($args, '"\'');
-          return "$value[1]($this->drupalPath$args)";
+          if (substr($args, 0, 4) === 'data') {
+            return "$value[1](\"$args\")";
+          }
+          else {
+            return "$value[1](\"$this->drupalPath$args\")";
+          }
         }
         else {
           return "$value[1]($args)";
@@ -130,11 +132,8 @@ class Compiler extends LeafoCompiler {
         return $left . $this->compileValue($interpolate) . $right;
 
       case Type::T_INTERPOLATE:
-        // Raw parse node.
-        list(, $exp) = $value;
-
         // Strip quotes if it's a string.
-        $reduced = $this->reduce($exp);
+        $reduced = $this->reduce($value[1]);
 
         switch ($reduced[0]) {
           case Type::T_LIST:
@@ -186,7 +185,7 @@ class Compiler extends LeafoCompiler {
         return 'null';
 
       default:
-        $this->throwError("unknown value type: $type");
+        $this->throwError("unknown value type: $value[0]");
     }
   }
 
