@@ -1,6 +1,6 @@
 name: SCSS compiler
 description: PHP SCSS compiler
-package: Drupal
+package: Development
 
 type: module
 core: 8.x

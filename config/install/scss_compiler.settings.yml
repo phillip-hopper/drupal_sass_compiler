@@ -1,2 +1,3 @@
 cache: false
 sourcemaps: true
+output_format: 'compressed'

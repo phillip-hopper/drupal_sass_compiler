@@ -106,6 +106,7 @@ class ScssCompilerService implements ScssCompilerInterface {
 
     $this->activeThemeName = $theme_manager->getActiveTheme()->getName();
     $this->cacheFolder = 'public://scss_compiler';
+    $this->outputFormat = $this->config->get('output_format');
     $this->isCacheEnabled = $this->config->get('cache');
     $this->isSourcemapEnabled = $this->config->get('sourcemaps');
   }
@@ -136,6 +137,13 @@ class ScssCompilerService implements ScssCompilerInterface {
    */
   public function getDefaultNamespace() {
     return $this->activeThemeName;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function outputFormat() {
+    return $this->outputFormat;
   }
 
   /**
@@ -218,16 +226,18 @@ class ScssCompilerService implements ScssCompilerInterface {
         }
         require_once DRUPAL_ROOT . '/libraries/scssphp/scss.inc.php';
         $this->parser = $parser = new Compiler();
+        $this->parser->setFormatter($this->getLeafoFormatClass($this->outputFormat));
       }
 
+      // Build path for @import, if import not found relative to current file,
+      // find relative to DRUPAL_ROOT, for example, load scss from another
+      // module, @import modules/custom/my_module/scss/mixins.
       $parser->setImportPaths([
         dirname($scss_file['scss_path']),
         DRUPAL_ROOT,
       ]);
-      $parser->setVariables([
-        'theme' => $theme_folder,
-      ]);
 
+      // Add theme/module path to compiler to build path to static resources.
       $parser->drupalPath = $theme_folder . '/';
       // Disable utf-8 support to increase performance.
       $parser->setEncoding(TRUE);
@@ -248,6 +258,34 @@ class ScssCompilerService implements ScssCompilerInterface {
     }
     catch (\Exception $e) {
       trigger_error($e->getMessage(), E_USER_ERROR);
+    }
+  }
+
+  /**
+   * Return Leafo scss compiler format class.
+   *
+   * @param string $format
+   *   Format name.
+   *
+   * @return string
+   *   Format type classname.
+   */
+  private function getLeafoFormatClass($format) {
+    switch ($format) {
+      case 'expanded':
+        return '\Leafo\ScssPhp\Formatter\Expanded';
+
+      case 'nested':
+        return '\Leafo\ScssPhp\Formatter\Nested';
+
+      case 'compact':
+        return '\Leafo\ScssPhp\Formatter\Compact';
+
+      case 'crunched':
+        return '\Leafo\ScssPhp\Formatter\Crunched';
+
+      default:
+        return '\Leafo\ScssPhp\Formatter\Compressed';
     }
   }
 

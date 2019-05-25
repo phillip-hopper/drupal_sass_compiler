@@ -76,4 +76,12 @@ interface ScssCompilerInterface {
    */
   public function getDefaultNamespace();
 
+  /**
+   * Return output format.
+   *
+   * @return string
+   *   Format name
+   */
+  public function outputFormat();
+
 }

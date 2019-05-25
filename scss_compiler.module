@@ -37,10 +37,28 @@ function scss_compiler_form_system_performance_settings_alter(&$form, FormStateI
     '#default_value' => \Drupal::service('scss_compiler')->isSourcemapEnabled(),
   ];
 
-  $form['scss_compiler']['advanced']['recompile'] = [
-    '#type'  => 'submit',
-    '#value' => t('Recompile'),
-    '#submit' => ['scss_compiler_recompile'],
+  $form['scss_compiler']['advanced']['scss_output_format'] = [
+    '#type' => 'select',
+    '#title' => t('Output format'),
+    '#description' => t('Default output format is compressed'),
+    '#options' => [
+      'expanded'    => 'Expanded',
+      'nested'      => 'Nested',
+      'compact'     => 'Compact',
+      'compressed'  => 'Compressed',
+      'crunched'    => 'Crunched',
+    ],
+    '#default_value' => \Drupal::service('scss_compiler')->outputFormat(),
+  ];
+
+  $form['scss_compiler']['advanced']['actions'] = [
+    '#type' => 'actions',
+    '#id'   => 'scss_compiler_action',
+    'recompile' => [
+      '#type'   => 'submit',
+      '#value'  => t('Recompile'),
+      '#submit' => ['scss_compiler_recompile'],
+    ],
   ];
 
   $form['#submit'][] = 'scss_compiler_system_performance_settings_submit';
@@ -62,6 +80,7 @@ function scss_compiler_system_performance_settings_submit(&$form, FormStateInter
   \Drupal::service('config.factory')->getEditable('scss_compiler.settings')
     ->set('cache', $form_state->getValue('scss_cache'))
     ->set('sourcemaps', $form_state->getValue('scss_sourcemaps'))
+    ->set('output_format', $form_state->getValue('scss_output_format'))
     ->save();
 }
 
@@ -69,6 +88,8 @@ function scss_compiler_system_performance_settings_submit(&$form, FormStateInter
  * Implements hook_library_info_alter().
  */
 function scss_compiler_library_info_alter(&$libraries, $extension) {
+  // Find all scss files, and add it extension to file info
+  // to use it in hook_css_alter.
   foreach ($libraries as &$library) {
     if (!empty($library['css'])) {
       foreach ($library['css'] as &$group) {
@@ -97,20 +118,24 @@ function scss_compiler_module_implements_alter(&$implementations, $hook) {
  * Implements hook_css_alter().
  */
 function scss_compiler_css_alter(&$css, AttachedAssetsInterface $assets) {
+  // Find all scss files and create associative array with info
+  // Each scss file has name, scss_path, css_path,
+  // namespace - theme/module name, uses to build path to static resources.
   $scss_files = [];
   foreach ($css as $path => $file) {
     if (pathinfo($path, PATHINFO_EXTENSION) === 'scss') {
+      $name = pathinfo($path, PATHINFO_FILENAME);
       if (!isset($file['namespace'])) {
         $file['namespace'] = Drupal::service('scss_compiler')->getDefaultNamespace();
       }
       if (isset($file['css_path'])) {
-        $file['css_path'] = $file['css_path'] . '/' . pathinfo($path, PATHINFO_FILENAME) . '.css';
+        $file['css_path'] = $file['css_path'] . '/' . $name . '.css';
       }
       else {
-        $file['css_path'] = Drupal::service('scss_compiler')->getCacheFolder() . '/' . $file['namespace'] . '/' . pathinfo($path, PATHINFO_FILENAME) . '.css';
+        $file['css_path'] = Drupal::service('scss_compiler')->getCacheFolder() . '/' . $file['namespace'] . '/' . $name . '.css';
       }
       $scss_file = [
-        'name'       => pathinfo($path, PATHINFO_FILENAME),
+        'name'       => $name,
         'namespace'  => $file['namespace'],
         'scss_path'  => $path,
         'css_path'   => $file['css_path'],
@@ -124,6 +149,7 @@ function scss_compiler_css_alter(&$css, AttachedAssetsInterface $assets) {
       $css[$scss_file['css_path']]['data'] = $scss_file['css_path'];
     }
   }
+  // All scss files saves to compile list cache.
   Drupal::service('scss_compiler')->setCompileList($scss_files);
 }
 
@@ -140,7 +166,9 @@ function scss_compiler_page_attachments_alter(array &$attachments) {
  * Implements hook_cache_flush().
  */
 function scss_compiler_cache_flush() {
-  if (!\Drupal::service('scss_compiler')->isCacheEnabled()) {
-    file_unmanaged_delete_recursive(Drupal::service('scss_compiler')->getCacheFolder());
+  if (Drupal::hasService('scss_compiler')) {
+    if (!\Drupal::service('scss_compiler')->isCacheEnabled()) {
+      file_unmanaged_delete_recursive(Drupal::service('scss_compiler')->getCacheFolder());
+    }
   }
 }

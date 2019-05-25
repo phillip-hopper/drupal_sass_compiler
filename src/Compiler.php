@@ -67,7 +67,7 @@ class Compiler extends LeafoCompiler {
 
         if ($value[1] == 'url' && $args) {
           $args = trim($args, '"\'');
-          if (substr($args, 0, 4) === 'data') {
+          if (substr($args, 0, 5) === 'data:') {
             return "$value[1](\"$args\")";
           }
           else {
