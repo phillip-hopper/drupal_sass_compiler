@@ -7,11 +7,16 @@ use Drupal\Core\Theme\ThemeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Drupal\Core\Cache\CacheBackendInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\Core\Messenger\MessengerTrait;
 
 /**
  * Defines a class for scss compiler service.
  */
 class ScssCompilerService implements ScssCompilerInterface {
+
+  use StringTranslationTrait;
+  use MessengerTrait;
 
   /**
    * Configuration object of scss compiler.
@@ -84,6 +89,13 @@ class ScssCompilerService implements ScssCompilerInterface {
   protected $isCacheEnabled;
 
   /**
+   * Output format type.
+   *
+   * @var string
+   */
+  protected $outputFormat;
+
+  /**
    * Constructs a SCSS Compiler service object.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config
@@ -121,8 +133,11 @@ class ScssCompilerService implements ScssCompilerInterface {
   /**
    * {@inheritdoc}
    */
-  public function isSourcemapEnabled() {
-    return $this->isSourcemapEnabled;
+  public function getOption($option) {
+    if (!is_string($option) || !$value = $this->config->get($option)) {
+      return NULL;
+    }
+    return $value;
   }
 
   /**
@@ -137,13 +152,6 @@ class ScssCompilerService implements ScssCompilerInterface {
    */
   public function getDefaultNamespace() {
     return $this->activeThemeName;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function outputFormat() {
-    return $this->outputFormat;
   }
 
   /**
@@ -205,7 +213,10 @@ class ScssCompilerService implements ScssCompilerInterface {
   public function compile($scss_file) {
     try {
       if (!file_exists($scss_file['scss_path'])) {
-        throw new \Exception('File ' . $scss_file['scss_path'] . ' not found');
+        $error_message = $this->t('File @path not found', [
+          '@path' => $scss_file['scss_path'],
+        ]);
+        throw new \Exception($error_message);
       }
 
       $type = 'theme';
@@ -214,7 +225,10 @@ class ScssCompilerService implements ScssCompilerInterface {
       }
       $path = @drupal_get_path($type, $scss_file['namespace']);
       if (empty($path)) {
-        throw new \Exception($type . ' ' . $scss_file['namespace'] . ' not found');
+        $error_message = $this->t('@path not found', [
+          '@path' => $type . ' ' . $scss_file['namespace'],
+        ]);
+        throw new \Exception($error_message);
       }
 
       $theme_folder = '/' . $path;
@@ -222,7 +236,8 @@ class ScssCompilerService implements ScssCompilerInterface {
 
       if (!$parser = $this->parser) {
         if (!file_exists(DRUPAL_ROOT . '/libraries/scssphp/scss.inc.php')) {
-          throw new \Exception('SCSS Compiler library not found. Visit status page for more information');
+          $error_message = $this->t('SCSS Compiler library not found. Visit status page for more information');
+          throw new \Exception($error_message);
         }
         require_once DRUPAL_ROOT . '/libraries/scssphp/scss.inc.php';
         $this->parser = $parser = new Compiler();
@@ -257,12 +272,12 @@ class ScssCompilerService implements ScssCompilerInterface {
 
     }
     catch (\Exception $e) {
-      trigger_error($e->getMessage(), E_USER_ERROR);
+      $this->messenger()->addError($e->getMessage());
     }
   }
 
   /**
-   * Return Leafo scss compiler format class.
+   * Return Leafo scss compiler format classname.
    *
    * @param string $format
    *   Format name.

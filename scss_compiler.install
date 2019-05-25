@@ -18,17 +18,16 @@ function scss_compiler_requirements($phase) {
     $description = '';
     if (!$installed = file_exists(DRUPAL_ROOT . '/libraries/scssphp/scss.inc.php')) {
       $url = Url::fromUri('https://github.com/leafo/scssphp/releases', ['external' => TRUE]);
-      $link = Link::fromTextAndUrl('Download', $url);
-      $description = 'SCSS compiler library not found. ' . $link->toString();
+      $link = Link::fromTextAndUrl(t('Download'), $url);
+      $description = t('SCSS compiler library not found. Download library and place it to drupal libraries folder. @link', [
+        '@link' => $link->toString(),
+      ]);
     }
     $requirements['scss_compiler'] = [
       'title'       => t('SCSS Compiler library'),
-      'value'       => $installed ? 'Installed' : 'Not installed',
+      'value'       => $installed ? t('Installed') : t('Not installed'),
       'severity'    => $installed ? REQUIREMENT_OK : REQUIREMENT_ERROR,
-      'description' => [
-        '#type'     => 'markup',
-        '#markup'   => $description,
-      ],
+      'description' => $description,
     ];
   }
   return $requirements;

@@ -19,7 +19,7 @@ interface ScssCompilerInterface {
    * Compiles all scss files which was registered.
    *
    * @param bool $all
-   *   If true compile all scss files from all themes in system,
+   *   If TRUE compile all scss files from all themes in system,
    *   else compile only scss files from active theme.
    */
   public function compileAll(bool $all);
@@ -28,11 +28,11 @@ interface ScssCompilerInterface {
    * Return list of scss files which need to be recompiled.
    *
    * @param bool $all
-   *   If true load all scss files from all themes in system,
+   *   If TRUE load all scss files from all themes in system,
    *   else load only scss files from active theme.
    *
    * @return array
-   *   An associative array with scss files info
+   *   An associative array with scss files info.
    */
   public function getCompileList(bool $all);
 
@@ -45,26 +45,30 @@ interface ScssCompilerInterface {
   public function setCompileList(array $files);
 
   /**
+   * Gets a specific option.
+   *
+   * @param string $option
+   *   The name of the option.
+   *
+   * @return mixed
+   *   The value for a specific option,
+   *   or NULL if it does not exist.
+   */
+  public function getOption($option);
+
+  /**
    * Return info about cache.
    *
    * @return bool
-   *   true if cache enabled else false
+   *   TRUE if cache enabled else FALSE.
    */
   public function isCacheEnabled();
-
-  /**
-   * Return info about sourcemap configuration.
-   *
-   * @return bool
-   *   true if sourcemaps enabled else false
-   */
-  public function isSourcemapEnabled();
 
   /**
    * Return path to cache folder where compiled file save.
    *
    * @return string
-   *   Internal drupal path to cache folder
+   *   Internal drupal path to cache folder.
    */
   public function getCacheFolder();
 
@@ -72,16 +76,8 @@ interface ScssCompilerInterface {
    * Return default namespace.
    *
    * @return string
-   *   Namespace title
+   *   Namespace title.
    */
   public function getDefaultNamespace();
-
-  /**
-   * Return output format.
-   *
-   * @return string
-   *   Format name
-   */
-  public function outputFormat();
 
 }

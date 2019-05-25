@@ -34,7 +34,7 @@ function scss_compiler_form_system_performance_settings_alter(&$form, FormStateI
   $form['scss_compiler']['advanced']['scss_sourcemaps'] = [
     '#type' => 'checkbox',
     '#title' => t('Enable SCSS sourcemaps'),
-    '#default_value' => \Drupal::service('scss_compiler')->isSourcemapEnabled(),
+    '#default_value' => \Drupal::service('scss_compiler')->getOption('sourcemaps'),
   ];
 
   $form['scss_compiler']['advanced']['scss_output_format'] = [
@@ -48,7 +48,7 @@ function scss_compiler_form_system_performance_settings_alter(&$form, FormStateI
       'compressed'  => 'Compressed',
       'crunched'    => 'Crunched',
     ],
-    '#default_value' => \Drupal::service('scss_compiler')->outputFormat(),
+    '#default_value' => \Drupal::service('scss_compiler')->getOption('output_format'),
   ];
 
   $form['scss_compiler']['advanced']['actions'] = [
