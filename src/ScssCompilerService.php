@@ -157,7 +157,7 @@ class ScssCompilerService implements ScssCompilerInterface {
   /**
    * {@inheritdoc}
    */
-  public function setCompileList($files) {
+  public function setCompileList(array $files) {
     // Save list of scss files which need to be recompiled to the cache.
     // Each theme has own list of files, to prevent recompile files
     // which not loaded in current theme.
@@ -178,7 +178,7 @@ class ScssCompilerService implements ScssCompilerInterface {
   /**
    * {@inheritdoc}
    */
-  public function getCompileList($all = FALSE) {
+  public function getCompileList(bool $all = FALSE) {
     $files = [];
     if ($cache = $this->cache->get('scss_compiler_list')) {
       $data = $cache->data;
@@ -196,7 +196,7 @@ class ScssCompilerService implements ScssCompilerInterface {
   /**
    * {@inheritdoc}
    */
-  public function compileAll($all = FALSE) {
+  public function compileAll(bool $all = FALSE) {
     $scss_files = $this->getCompileList($all);
     if (!empty($scss_files)) {
       foreach ($scss_files as $namespace) {
@@ -210,7 +210,7 @@ class ScssCompilerService implements ScssCompilerInterface {
   /**
    * {@inheritdoc}
    */
-  public function compile($scss_file) {
+  public function compile(array $scss_file) {
     try {
       if (!file_exists($scss_file['scss_path'])) {
         $error_message = $this->t('File @path not found', [
