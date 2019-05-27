@@ -134,10 +134,10 @@ class ScssCompilerService implements ScssCompilerInterface {
    * {@inheritdoc}
    */
   public function getOption($option) {
-    if (!is_string($option) || !$value = $this->config->get($option)) {
+    if (!is_string($option)) {
       return NULL;
     }
-    return $value;
+    return $this->config->get($option);
   }
 
   /**
@@ -178,7 +178,7 @@ class ScssCompilerService implements ScssCompilerInterface {
   /**
    * {@inheritdoc}
    */
-  public function getCompileList(bool $all = FALSE) {
+  public function getCompileList($all = FALSE) {
     $files = [];
     if ($cache = $this->cache->get('scss_compiler_list')) {
       $data = $cache->data;
@@ -196,7 +196,7 @@ class ScssCompilerService implements ScssCompilerInterface {
   /**
    * {@inheritdoc}
    */
-  public function compileAll(bool $all = FALSE) {
+  public function compileAll($all = FALSE) {
     $scss_files = $this->getCompileList($all);
     if (!empty($scss_files)) {
       foreach ($scss_files as $namespace) {

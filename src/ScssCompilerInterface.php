@@ -22,7 +22,7 @@ interface ScssCompilerInterface {
    *   If TRUE compile all scss files from all themes in system,
    *   else compile only scss files from active theme.
    */
-  public function compileAll(bool $all);
+  public function compileAll($all);
 
   /**
    * Return list of scss files which need to be recompiled.
@@ -34,7 +34,7 @@ interface ScssCompilerInterface {
    * @return array
    *   An associative array with scss files info.
    */
-  public function getCompileList(bool $all);
+  public function getCompileList($all);
 
   /**
    * Save list of scss files which need to be recompiled.
@@ -65,7 +65,7 @@ interface ScssCompilerInterface {
   public function isCacheEnabled();
 
   /**
-   * Return path to cache folder where compiled file save.
+   * Return path to cache folder where compiled files save.
    *
    * @return string
    *   Internal drupal path to cache folder.
