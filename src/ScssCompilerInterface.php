@@ -8,7 +8,7 @@ namespace Drupal\scss_compiler;
 interface ScssCompilerInterface {
 
   /**
-   * Compile single scss file into css.
+   * Compiles single scss file into css.
    *
    * @param array $scss_file
    *   An associative array with scss file info.
@@ -19,17 +19,17 @@ interface ScssCompilerInterface {
    * Compiles all scss files which was registered.
    *
    * @param bool $all
-   *   If TRUE compile all scss files from all themes in system,
-   *   else compile only scss files from active theme.
+   *   If TRUE compiles all scss files from all themes in system,
+   *   else compiles only scss files from active theme.
    */
   public function compileAll($all);
 
   /**
-   * Return list of scss files which need to be recompiled.
+   * Returns list of scss files which need to be recompiled.
    *
    * @param bool $all
-   *   If TRUE load all scss files from all themes in system,
-   *   else load only scss files from active theme.
+   *   If TRUE loads all scss files from all themes in system,
+   *   else loads only scss files from active theme.
    *
    * @return array
    *   An associative array with scss files info.
@@ -37,7 +37,7 @@ interface ScssCompilerInterface {
   public function getCompileList($all);
 
   /**
-   * Save list of scss files which need to be recompiled.
+   * Saves list of scss files which need to be recompiled.
    *
    * @param array $files
    *   List of scss files.
@@ -57,7 +57,7 @@ interface ScssCompilerInterface {
   public function getOption($option);
 
   /**
-   * Return info about cache.
+   * Returns info about cache.
    *
    * @return bool
    *   TRUE if cache enabled else FALSE.
@@ -65,7 +65,7 @@ interface ScssCompilerInterface {
   public function isCacheEnabled();
 
   /**
-   * Return path to cache folder where compiled files save.
+   * Returns path to cache folder where compiled files save.
    *
    * @return string
    *   Internal drupal path to cache folder.
@@ -73,10 +73,10 @@ interface ScssCompilerInterface {
   public function getCacheFolder();
 
   /**
-   * Return default namespace.
+   * Returns default namespace.
    *
    * @return string
-   *   Namespace title.
+   *   Default namespace name.
    */
   public function getDefaultNamespace();
 

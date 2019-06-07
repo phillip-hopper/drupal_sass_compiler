@@ -2,16 +2,17 @@
 
 namespace Drupal\scss_compiler;
 
-use Leafo\ScssPhp\Compiler as LeafoCompiler;
-use Leafo\ScssPhp\Type;
-use Leafo\ScssPhp\Node\Number;
+use ScssPhp\ScssPhp\Compiler as ScssPhpCompiler;
+use ScssPhp\ScssPhp\Type;
+use ScssPhp\ScssPhp\Node\Number;
 
 /**
- * Extends Leafo Scssphp Compiler.
+ * Extends ScssPhp Compiler.
  *
- * Add path variable to handle static resource path relative to theme/module.
+ * Adds path variable to handle path to static resources relative to
+ * theme/module.
  */
-class Compiler extends LeafoCompiler {
+class Compiler extends ScssPhpCompiler {
 
   /**
    * Path to theme/module.

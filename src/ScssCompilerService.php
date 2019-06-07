@@ -33,7 +33,7 @@ class ScssCompilerService implements ScssCompilerInterface {
   protected $themeManager;
 
   /**
-   * The module handler class to use for check existing modules.
+   * The module handler.
    *
    * @var \Drupal\Core\Extension\ModuleHandlerInterface
    */
@@ -103,7 +103,7 @@ class ScssCompilerService implements ScssCompilerInterface {
    * @param \Drupal\Core\Theme\ThemeManagerInterface $theme_manager
    *   The theme manager.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
-   *   The module handler class to use for check existing modules.
+   *   The module handler.
    * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
    *   The request stack.
    * @param \Drupal\Core\Cache\CacheBackendInterface $cache
@@ -236,12 +236,19 @@ class ScssCompilerService implements ScssCompilerInterface {
 
       if (!$parser = $this->parser) {
         if (!file_exists(DRUPAL_ROOT . '/libraries/scssphp/scss.inc.php')) {
-          $error_message = $this->t('SCSS Compiler library not found. Visit status page for more information');
+          $error_message = $this->t('SCSS Compiler library not found. Visit status page for more information.');
           throw new \Exception($error_message);
         }
         require_once DRUPAL_ROOT . '/libraries/scssphp/scss.inc.php';
+
+        // leafo/scssphp no longer supported, it was forked to scssphp/scssphp.
+        // @see https://github.com/leafo/scssphp/issues/707
+        if (!class_exists('ScssPhp\ScssPhp\Compiler')) {
+          $error_message = $this->t('leafo/scssphp no longer supported. Use scssphp/scssphp instead (https://github.com/scssphp/scssphp/releases)');
+          throw new \Exception($error_message);
+        }
         $this->parser = $parser = new Compiler();
-        $this->parser->setFormatter($this->getLeafoFormatClass($this->outputFormat));
+        $this->parser->setFormatter($this->getScssPhpFormatClass($this->outputFormat));
       }
 
       // Build path for @import, if import not found relative to current file,
@@ -277,7 +284,7 @@ class ScssCompilerService implements ScssCompilerInterface {
   }
 
   /**
-   * Return Leafo scss compiler format classname.
+   * Returns ScssPhp Compiler format classname.
    *
    * @param string $format
    *   Format name.
@@ -285,22 +292,22 @@ class ScssCompilerService implements ScssCompilerInterface {
    * @return string
    *   Format type classname.
    */
-  private function getLeafoFormatClass($format) {
+  private function getScssPhpFormatClass($format) {
     switch ($format) {
       case 'expanded':
-        return '\Leafo\ScssPhp\Formatter\Expanded';
+        return '\ScssPhp\ScssPhp\Formatter\Expanded';
 
       case 'nested':
-        return '\Leafo\ScssPhp\Formatter\Nested';
+        return '\ScssPhp\ScssPhp\Formatter\Nested';
 
       case 'compact':
-        return '\Leafo\ScssPhp\Formatter\Compact';
+        return '\ScssPhp\ScssPhp\Formatter\Compact';
 
       case 'crunched':
-        return '\Leafo\ScssPhp\Formatter\Crunched';
+        return '\ScssPhp\ScssPhp\Formatter\Crunched';
 
       default:
-        return '\Leafo\ScssPhp\Formatter\Compressed';
+        return '\ScssPhp\ScssPhp\Formatter\Compressed';
     }
   }
 
