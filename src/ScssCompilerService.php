@@ -239,7 +239,6 @@ class ScssCompilerService implements ScssCompilerInterface {
           $error_message = $this->t('SCSS Compiler library not found. Visit status page for more information.');
           throw new \Exception($error_message);
         }
-        kint(fileperms(DRUPAL_ROOT . '/libraries/scssphp/'));
         require_once DRUPAL_ROOT . '/libraries/scssphp/scss.inc.php';
 
         // leafo/scssphp no longer supported, it was forked to scssphp/scssphp.
