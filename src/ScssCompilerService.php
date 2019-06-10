@@ -289,7 +289,7 @@ class ScssCompilerService implements ScssCompilerInterface {
         $sourcemap_file = $cache_folder . '/' . $scss_file['name'] . '.css.map';
         $parser->setSourceMapOptions([
           'sourceMapWriteTo'  => $sourcemap_file,
-          'sourceMapURL'      => $sourcemap_file,
+          'sourceMapURL'      => file_create_url($sourcemap_file),
           'sourceMapBasepath' => $host . '/',
           'sourceMapRootpath' => $host . '/',
         ]);
