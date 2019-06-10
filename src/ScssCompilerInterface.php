@@ -80,4 +80,19 @@ interface ScssCompilerInterface {
    */
   public function getDefaultNamespace();
 
+  /**
+   * Returns destination of css file.
+   *
+   * @param string $name
+   *   Css file name.
+   * @param string $namespace
+   *   Css file namespace.
+   * @param string $css_path
+   *   Optional custom destination path.
+   *
+   * @return string
+   *   Css path of compiled file.
+   */
+  public function buildCssPath($name, $namespace, $css_path);
+
 }

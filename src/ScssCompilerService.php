@@ -75,25 +75,11 @@ class ScssCompilerService implements ScssCompilerInterface {
   protected $cacheFolder;
 
   /**
-   * Flag if sourcemap enabled.
-   *
-   * @var bool
-   */
-  protected $isSourcemapEnabled;
-
-  /**
    * Flag if cache enabled.
    *
    * @var bool
    */
   protected $isCacheEnabled;
-
-  /**
-   * Output format type.
-   *
-   * @var string
-   */
-  protected $outputFormat;
 
   /**
    * Constructs a SCSS Compiler service object.
@@ -118,9 +104,7 @@ class ScssCompilerService implements ScssCompilerInterface {
 
     $this->activeThemeName = $theme_manager->getActiveTheme()->getName();
     $this->cacheFolder = 'public://scss_compiler';
-    $this->outputFormat = $this->config->get('output_format');
     $this->isCacheEnabled = $this->config->get('cache');
-    $this->isSourcemapEnabled = $this->config->get('sourcemaps');
   }
 
   /**
@@ -210,6 +194,53 @@ class ScssCompilerService implements ScssCompilerInterface {
   /**
    * {@inheritdoc}
    */
+  public function buildCssPath($name, $namespace, $css_path = NULL) {
+    try {
+      // If custom css path defined, limit it to theme/module folder to prevent
+      // overwriting files outside of the theme/module.
+      if ($css_path) {
+        $path = $this->getNamespacePath($namespace);
+        return $path . '/' . trim($css_path, '/ ') . '/' . $name . '.css';
+      }
+      else {
+        return $this->getCacheFolder() . '/' . $namespace . '/' . $name . '.css';
+      }
+    }
+    catch (\Exception $e) {
+      $this->messenger()->addError($e->getMessage());
+    }
+  }
+
+  /**
+   * Returns namespace path.
+   *
+   * @param string $namespace
+   *   Namespace name.
+   *
+   * @throws Exception
+   *   If namespace is invalid.
+   *
+   * @return string
+   *   Path to theme/module of given namespace.
+   */
+  protected function getNamespacePath($namespace) {
+    $type = 'theme';
+    if ($this->moduleHandler->moduleExists($namespace)) {
+      $type = 'module';
+    }
+    $path = @drupal_get_path($type, $namespace);
+    if (empty($path)) {
+      $error_message = $this->t('@namespace is invalid', [
+        '@namespace' => $type . ' ' . $namespace,
+      ]);
+      throw new \Exception($error_message);
+    }
+    return $path;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function compile(array $scss_file) {
     try {
       if (!file_exists($scss_file['scss_path'])) {
@@ -218,21 +249,6 @@ class ScssCompilerService implements ScssCompilerInterface {
         ]);
         throw new \Exception($error_message);
       }
-
-      $type = 'theme';
-      if ($this->moduleHandler->moduleExists($scss_file['namespace'])) {
-        $type = 'module';
-      }
-      $path = @drupal_get_path($type, $scss_file['namespace']);
-      if (empty($path)) {
-        $error_message = $this->t('@path not found', [
-          '@path' => $type . ' ' . $scss_file['namespace'],
-        ]);
-        throw new \Exception($error_message);
-      }
-
-      $theme_folder = '/' . $path;
-      $cache_folder = $this->cacheFolder . '/' . $scss_file['namespace'];
 
       if (!$parser = $this->parser) {
         if (!file_exists(DRUPAL_ROOT . '/libraries/scssphp/scss.inc.php')) {
@@ -250,7 +266,9 @@ class ScssCompilerService implements ScssCompilerInterface {
           throw new \Exception($error_message);
         }
         $this->parser = $parser = new Compiler();
-        $this->parser->setFormatter($this->getScssPhpFormatClass($this->outputFormat));
+        $this->parser->setFormatter($this->getScssPhpFormatClass($this->getOption('output_format')));
+        // Disable utf-8 support to increase performance.
+        $parser->setEncoding(TRUE);
       }
 
       // Build path for @import, if import not found relative to current file,
@@ -262,21 +280,24 @@ class ScssCompilerService implements ScssCompilerInterface {
       ]);
 
       // Add theme/module path to compiler to build path to static resources.
-      $parser->drupalPath = $theme_folder . '/';
-      // Disable utf-8 support to increase performance.
-      $parser->setEncoding(TRUE);
-      if ($this->isSourcemapEnabled) {
+      $parser->drupalPath = '/' . $this->getNamespacePath($scss_file['namespace']) . '/';
+
+      $cache_folder = $this->cacheFolder . '/' . $scss_file['namespace'];
+      if ($this->getOption('sourcemaps')) {
         $parser->setSourceMap(Compiler::SOURCE_MAP_FILE);
         $host = $this->request->getSchemeAndHttpHost();
+        $sourcemap_file = $cache_folder . '/' . $scss_file['name'] . '.css.map';
         $parser->setSourceMapOptions([
-          'sourceMapWriteTo' => $cache_folder . '/' . $scss_file['name'] . '.css.map',
-          'sourceMapURL' => file_create_url($cache_folder . '/' . $scss_file['name'] . '.css.map'),
+          'sourceMapWriteTo'  => $sourcemap_file,
+          'sourceMapURL'      => $sourcemap_file,
           'sourceMapBasepath' => $host . '/',
           'sourceMapRootpath' => $host . '/',
         ]);
       }
       file_prepare_directory($cache_folder, FILE_CREATE_DIRECTORY);
       $content = $parser->compile(file_get_contents($scss_file['scss_path']), $scss_file['scss_path']);
+      $css_folder = dirname($scss_file['css_path']);
+      file_prepare_directory($css_folder, FILE_CREATE_DIRECTORY);
       file_put_contents($scss_file['css_path'], trim($content));
 
     }

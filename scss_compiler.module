@@ -88,7 +88,7 @@ function scss_compiler_form_system_performance_settings_alter(&$form, FormStateI
 
   $form['scss_compiler']['advanced']['actions'] = [
     '#type' => 'actions',
-    '#id'   => 'scss_compiler_action',
+    '#id'   => 'scss_compiler_actions',
     'recompile' => [
       '#type'   => 'submit',
       '#value'  => t('Recompile'),
@@ -101,15 +101,15 @@ function scss_compiler_form_system_performance_settings_alter(&$form, FormStateI
 }
 
 /**
- * Recompile all scss files.
+ * Recompiles all scss files.
  */
 function scss_compiler_recompile() {
   \Drupal::service('scss_compiler')->compileAll(TRUE);
-  \Drupal::service('messenger')->addStatus(('SCSS files recompiled.'));
+  \Drupal::service('messenger')->addStatus(t('SCSS files recompiled.'));
 }
 
 /**
- * Save scss compiler settings on form submit.
+ * Saves scss compiler settings on form submit.
  */
 function scss_compiler_system_performance_settings_submit(&$form, FormStateInterface $form_state) {
   \Drupal::service('config.factory')->getEditable('scss_compiler.settings')
@@ -163,17 +163,18 @@ function scss_compiler_css_alter(&$css, AttachedAssetsInterface $assets) {
       if (!isset($file['namespace'])) {
         $file['namespace'] = Drupal::service('scss_compiler')->getDefaultNamespace();
       }
-      if (isset($file['css_path'])) {
-        $file['css_path'] = $file['css_path'] . '/' . $name . '.css';
+      if (!isset($file['css_path'])) {
+        $file['css_path'] = '';
       }
-      else {
-        $file['css_path'] = Drupal::service('scss_compiler')->getCacheFolder() . '/' . $file['namespace'] . '/' . $name . '.css';
+      $css_path = Drupal::service('scss_compiler')->buildCssPath($name, $file['namespace'], $file['css_path']);
+      if (empty($css_path)) {
+        continue;
       }
       $scss_file = [
         'name'       => $name,
         'namespace'  => $file['namespace'],
         'scss_path'  => $path,
-        'css_path'   => $file['css_path'],
+        'css_path'   => $css_path,
       ];
       $scss_files[$scss_file['namespace']][$scss_file['name']] = $scss_file;
       if (!file_exists($scss_file['css_path'])) {
