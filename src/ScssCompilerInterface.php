@@ -12,6 +12,10 @@ interface ScssCompilerInterface {
    *
    * @param array $scss_file
    *   An associative array with scss file info.
+   *   - name: filename.
+   *   - namespace: theme/module name.
+   *   - source_path: source file path.
+   *   - css_path: css file destination path.
    */
   public function compile(array $scss_file);
 
@@ -73,26 +77,23 @@ interface ScssCompilerInterface {
   public function getCacheFolder();
 
   /**
-   * Returns default namespace.
+   * Returns compile file info.
    *
-   * @return string
-   *   Default namespace name.
+   * @param array $info
+   *   An associative array containing:
+   *   - namespace: theme/module name. Required.
+   *   - data: source file path. Required.
+   *   - css_path: custom destination css path. Optional.
+   *
+   * @return array|null
+   *   Compile file info:
+   *   - name: filename.
+   *   - namespace: theme/module name.
+   *   - source_path: source file path.
+   *   - css_path: css file destination path.
+   *
+   *   or null if source data is incorrect.
    */
-  public function getDefaultNamespace();
-
-  /**
-   * Returns destination of css file.
-   *
-   * @param string $name
-   *   Css file name.
-   * @param string $namespace
-   *   Css file namespace.
-   * @param string $css_path
-   *   Optional custom destination path.
-   *
-   * @return string
-   *   Css path of compiled file.
-   */
-  public function buildCssPath($name, $namespace, $css_path);
+  public function buildCompileFileInfo(array $info);
 
 }

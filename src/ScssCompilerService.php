@@ -134,13 +134,6 @@ class ScssCompilerService implements ScssCompilerInterface {
   /**
    * {@inheritdoc}
    */
-  public function getDefaultNamespace() {
-    return $this->activeThemeName;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function setCompileList(array $files) {
     // Save list of scss files which need to be recompiled to the cache.
     // Each theme has own list of files, to prevent recompile files
@@ -194,17 +187,40 @@ class ScssCompilerService implements ScssCompilerInterface {
   /**
    * {@inheritdoc}
    */
-  public function buildCssPath($name, $namespace, $css_path = NULL) {
+  public function buildCompileFileInfo(array $info) {
     try {
-      // If custom css path defined, limit it to theme/module folder to prevent
-      // overwriting files outside of the theme/module.
-      if ($css_path) {
-        $path = $this->getNamespacePath($namespace);
-        return $path . '/' . trim($css_path, '/ ') . '/' . $name . '.css';
+      if (empty($info['data']) || empty($info['namespace'])) {
+        $error_message = $this->t('Compile file info build are failed. Required parameters are missing.');
+        throw new \Exception($error_message);
+      }
+
+      $namespace_path = $this->getNamespacePath($info['namespace']);
+      $name = pathinfo($info['data'], PATHINFO_FILENAME);
+      if (!empty($info['css_path'])) {
+        // If custom css path defined, limit it to theme/module folder to
+        // prevent overwriting files outside of the theme/module.
+        $css_path = $namespace_path . '/' . trim($info['css_path'], '/. ') . '/' . $name . '.css';
       }
       else {
-        return $this->getCacheFolder() . '/' . $namespace . '/' . $name . '.css';
+        // Get source file path relative to theme/module and add it to css path
+        // to prevent overwriting files when two source files with the same name
+        // defined in different folders.
+        $source_folder = dirname($info['data']);
+        if (substr($source_folder, 0, strlen($namespace_path)) === $namespace_path) {
+          $internal_folder = substr($source_folder, strlen($namespace_path));
+          $css_path = $this->getCacheFolder() . '/' . $info['namespace'] . '/' . trim($internal_folder, '/ ') . '/' . $name . '.css';
+        }
+        else {
+          $css_path = $this->getCacheFolder() . '/' . $info['namespace'] . '/' . $name . '.css';
+        }
       }
+
+      return [
+        'name'        => $name,
+        'namespace'   => $info['namespace'],
+        'source_path' => $info['data'],
+        'css_path'    => $css_path,
+      ];
     }
     catch (\Exception $e) {
       $this->messenger()->addError($e->getMessage());
@@ -243,9 +259,9 @@ class ScssCompilerService implements ScssCompilerInterface {
    */
   public function compile(array $scss_file) {
     try {
-      if (!file_exists($scss_file['scss_path'])) {
+      if (!file_exists($scss_file['source_path'])) {
         $error_message = $this->t('File @path not found', [
-          '@path' => $scss_file['scss_path'],
+          '@path' => $scss_file['source_path'],
         ]);
         throw new \Exception($error_message);
       }
@@ -268,25 +284,25 @@ class ScssCompilerService implements ScssCompilerInterface {
         $this->parser = $parser = new Compiler();
         $this->parser->setFormatter($this->getScssPhpFormatClass($this->getOption('output_format')));
         // Disable utf-8 support to increase performance.
-        $parser->setEncoding(TRUE);
+        $this->parser->setEncoding(TRUE);
       }
 
       // Build path for @import, if import not found relative to current file,
       // find relative to DRUPAL_ROOT, for example, load scss from another
       // module, @import modules/custom/my_module/scss/mixins.
       $parser->setImportPaths([
-        dirname($scss_file['scss_path']),
+        dirname($scss_file['source_path']),
         DRUPAL_ROOT,
       ]);
 
       // Add theme/module path to compiler to build path to static resources.
       $parser->drupalPath = '/' . $this->getNamespacePath($scss_file['namespace']) . '/';
 
-      $cache_folder = $this->cacheFolder . '/' . $scss_file['namespace'];
+      $css_folder = dirname($scss_file['css_path']);
       if ($this->getOption('sourcemaps')) {
         $parser->setSourceMap(Compiler::SOURCE_MAP_FILE);
         $host = $this->request->getSchemeAndHttpHost();
-        $sourcemap_file = $cache_folder . '/' . $scss_file['name'] . '.css.map';
+        $sourcemap_file = $css_folder . '/' . $scss_file['name'] . '.css.map';
         $parser->setSourceMapOptions([
           'sourceMapWriteTo'  => $sourcemap_file,
           'sourceMapURL'      => file_create_url($sourcemap_file),
@@ -294,10 +310,8 @@ class ScssCompilerService implements ScssCompilerInterface {
           'sourceMapRootpath' => $host . '/',
         ]);
       }
-      file_prepare_directory($cache_folder, FILE_CREATE_DIRECTORY);
-      $content = $parser->compile(file_get_contents($scss_file['scss_path']), $scss_file['scss_path']);
-      $css_folder = dirname($scss_file['css_path']);
       file_prepare_directory($css_folder, FILE_CREATE_DIRECTORY);
+      $content = $parser->compile(file_get_contents($scss_file['source_path']), $scss_file['source_path']);
       file_put_contents($scss_file['css_path'], trim($content));
 
     }

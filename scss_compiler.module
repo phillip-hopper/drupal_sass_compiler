@@ -154,29 +154,17 @@ function scss_compiler_module_implements_alter(&$implementations, $hook) {
  */
 function scss_compiler_css_alter(&$css, AttachedAssetsInterface $assets) {
   // Find all scss files and create associative array with info
-  // Each scss file has name, scss_path, css_path,
+  // Each scss file has name, source_path, css_path,
   // namespace - theme/module name, uses to build path to static resources.
   $scss_files = [];
   foreach ($css as $path => $file) {
     if (pathinfo($path, PATHINFO_EXTENSION) === 'scss') {
-      $name = pathinfo($path, PATHINFO_FILENAME);
-      if (!isset($file['namespace'])) {
-        $file['namespace'] = Drupal::service('scss_compiler')->getDefaultNamespace();
-      }
-      if (!isset($file['css_path'])) {
-        $file['css_path'] = '';
-      }
-      $css_path = Drupal::service('scss_compiler')->buildCssPath($name, $file['namespace'], $file['css_path']);
-      if (empty($css_path)) {
+      $scss_file = Drupal::service('scss_compiler')->buildCompileFileInfo($file);
+      if (empty($scss_file)) {
         continue;
       }
-      $scss_file = [
-        'name'       => $name,
-        'namespace'  => $file['namespace'],
-        'scss_path'  => $path,
-        'css_path'   => $css_path,
-      ];
-      $scss_files[$scss_file['namespace']][$scss_file['name']] = $scss_file;
+
+      $scss_files[$scss_file['namespace']][$scss_file['source_path']] = $scss_file;
       if (!file_exists($scss_file['css_path'])) {
         Drupal::service('scss_compiler')->compile($scss_file);
       }
@@ -193,6 +181,7 @@ function scss_compiler_css_alter(&$css, AttachedAssetsInterface $assets) {
  * Implements hook_page_attachments_alter().
  */
 function scss_compiler_page_attachments_alter(array &$attachments) {
+  // @todo compile only files which presents on active page.
   if (!\Drupal::service('scss_compiler')->isCacheEnabled()) {
     Drupal::service('scss_compiler')->compileAll();
   }
