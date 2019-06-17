@@ -159,7 +159,7 @@ function scss_compiler_css_alter(&$css, AttachedAssetsInterface $assets) {
   $scss_files = [];
   foreach ($css as $path => $file) {
     if (pathinfo($path, PATHINFO_EXTENSION) === 'scss') {
-      $scss_file = Drupal::service('scss_compiler')->buildCompileFileInfo($file);
+      $scss_file = Drupal::service('scss_compiler')->buildCompilationFileInfo($file);
       if (empty($scss_file)) {
         continue;
       }

@@ -187,18 +187,17 @@ class ScssCompilerService implements ScssCompilerInterface {
   /**
    * {@inheritdoc}
    */
-  public function buildCompileFileInfo(array $info) {
+  public function buildCompilationFileInfo(array $info) {
     try {
       if (empty($info['data']) || empty($info['namespace'])) {
-        $error_message = $this->t('Compile file info build are failed. Required parameters are missing.');
+        $error_message = $this->t('Compilation file info build is failed. Required parameters are missing.');
         throw new \Exception($error_message);
       }
 
       $namespace_path = $this->getNamespacePath($info['namespace']);
       $name = pathinfo($info['data'], PATHINFO_FILENAME);
       if (!empty($info['css_path'])) {
-        // If custom css path defined, limit it to theme/module folder to
-        // prevent overwriting files outside of the theme/module.
+        // If custom css path defined, build path relative to theme/module.
         $css_path = $namespace_path . '/' . trim($info['css_path'], '/. ') . '/' . $name . '.css';
       }
       else {
@@ -311,6 +310,17 @@ class ScssCompilerService implements ScssCompilerInterface {
         ]);
       }
       file_prepare_directory($css_folder, FILE_CREATE_DIRECTORY);
+      // If custom css path defined, check if it located in the proper
+      // theme/module folder else throw an error.
+      if (substr($css_folder, 0, strlen($this->cacheFolder)) !== $this->cacheFolder) {
+        $namespace_path = $this->getNamespacePath($scss_file['namespace']);
+        if (strpos(realpath($css_folder), realpath($namespace_path)) !== 0) {
+          $error_message = $this->t('Css destination path is wrong, @path', [
+            '@path' => $scss_file['css_path'],
+          ]);
+          throw new \Exception($error_message);
+        }
+      }
       $content = $parser->compile(file_get_contents($scss_file['source_path']), $scss_file['source_path']);
       file_put_contents($scss_file['css_path'], trim($content));
 

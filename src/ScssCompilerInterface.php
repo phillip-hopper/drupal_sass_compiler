@@ -12,10 +12,10 @@ interface ScssCompilerInterface {
    *
    * @param array $scss_file
    *   An associative array with scss file info.
-   *   - name: filename.
-   *   - namespace: theme/module name.
-   *   - source_path: source file path.
-   *   - css_path: css file destination path.
+   *   - name: filename. Required.
+   *   - namespace: theme/module name. Required.
+   *   - source_path: source file path. Required.
+   *   - css_path: css file destination path. Required.
    */
   public function compile(array $scss_file);
 
@@ -92,8 +92,8 @@ interface ScssCompilerInterface {
    *   - source_path: source file path.
    *   - css_path: css file destination path.
    *
-   *   or null if source data is incorrect.
+   *   or NULL if source data is incorrect.
    */
-  public function buildCompileFileInfo(array $info);
+  public function buildCompilationFileInfo(array $info);
 
 }
