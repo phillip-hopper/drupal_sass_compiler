@@ -266,20 +266,28 @@ class ScssCompilerService implements ScssCompilerInterface {
       }
 
       if (!$parser = $this->parser) {
-        if (!file_exists(DRUPAL_ROOT . '/libraries/scssphp/scss.inc.php')) {
+        $compiler_class_exists = class_exists('ScssPhp\ScssPhp\Compiler');
+        if (!$compiler_class_exists && !file_exists(DRUPAL_ROOT . '/libraries/scssphp/scss.inc.php')) {
           $error_message = $this->t('SCSS Compiler library not found. Visit status page for more information.');
           throw new \Exception($error_message);
         }
-        require_once DRUPAL_ROOT . '/libraries/scssphp/scss.inc.php';
 
-        // leafo/scssphp no longer supported, it was forked to scssphp/scssphp.
-        // @see https://github.com/leafo/scssphp/issues/707
+        // If library didn't autoload from the vendor folder, try to load it
+        // from the libraries folder.
         if (!class_exists('ScssPhp\ScssPhp\Compiler')) {
-          $error_message = $this->t('leafo/scssphp no longer supported. Update compiler library to scssphp/scssphp @url', [
-            '@url' => '(https://github.com/scssphp/scssphp/releases)',
-          ]);
-          throw new \Exception($error_message);
+          require_once DRUPAL_ROOT . '/libraries/scssphp/scss.inc.php';
+
+          // leafo/scssphp no longer supported, it was forked to
+          // scssphp/scssphp.
+          // @see https://github.com/leafo/scssphp/issues/707
+          if (!class_exists('ScssPhp\ScssPhp\Compiler')) {
+            $error_message = $this->t('leafo/scssphp no longer supported. Update compiler library to scssphp/scssphp @url', [
+              '@url' => '(https://github.com/scssphp/scssphp/releases)',
+            ]);
+            throw new \Exception($error_message);
+          }
         }
+
         $this->parser = $parser = new Compiler();
         $this->parser->setFormatter($this->getScssPhpFormatClass($this->getOption('output_format')));
         // Disable utf-8 support to increase performance.
