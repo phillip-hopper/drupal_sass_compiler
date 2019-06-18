@@ -272,9 +272,9 @@ class ScssCompilerService implements ScssCompilerInterface {
           throw new \Exception($error_message);
         }
 
-        // If library didn't autoload from the vendor folder, try to load it
-        // from the libraries folder.
-        if (!class_exists('ScssPhp\ScssPhp\Compiler')) {
+        // If library didn't autoload from the vendor folder, load it from the
+        // libraries folder.
+        if (!$compiler_class_exists) {
           require_once DRUPAL_ROOT . '/libraries/scssphp/scss.inc.php';
 
           // leafo/scssphp no longer supported, it was forked to

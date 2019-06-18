@@ -11,29 +11,15 @@ Module requires php compiler library [ScssPhp][1]
 (DRUPAL_ROOT/libraries/)
 3. Install module and all SCSS files defined in libraries.yml
 will be compiled into css
-### Composer installation
-Module could work even if compiler library was in the vendor folder, but when
-the core will be updated manually, the compiler library will be deleted from
-the vendor folder, so it installs to the drupal libraries folder, but composer
-doesn't allow to install packages outside of the vendor folder, only via custom
-installers, so we use composer [custom-directory-installer][3]. It allows us to
-change destination folder of package, by defining it manually.
 
-Add scssphp/scssphp to drupal-libraries path in composer.json, libraries path
-may be different, so don't replace entire path from the example.
-```json
-"extra": {
-  "installer-paths": {
-    "web/libraries/{$name}": ["type:drupal-library", "scssphp/scssphp"]
-  }
-}
-```
-Install dependencies and module
-```
-composer require 'mnsami/composer-custom-directory-installer:^1.1'
-composer require 'scssphp/scssphp:^1.0'
-composer require 'drupal/scss_compiler'
-```
+### Composer installation
+If you manage your site with composer, just install it like other composer
+packages, dependencies will be resolved automatically.
+
+Composer installs compiler library to the vendor folder, so be aware when update
+core manually, library will be removed. After manual core update just download
+library manually and place it to the drupal libraries folder, see manual
+installation instruction.
 
 ## CONFIGURATION
 All module settings are on the performance page.

@@ -1,5 +1,5 @@
 name: SCSS compiler
-description: PHP SCSS compiler
+description: Automatically compiles scss files into css
 package: Development
 
 type: module
