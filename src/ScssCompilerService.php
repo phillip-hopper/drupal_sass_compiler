@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\Messenger\MessengerTrait;
+use Drupal\Core\File\FileSystemInterface;
 
 /**
  * Defines a class for scss compiler service.
@@ -54,6 +55,13 @@ class ScssCompilerService implements ScssCompilerInterface {
   protected $cache;
 
   /**
+   * The file system service.
+   *
+   * @var \Drupal\Core\File\FileSystemInterface
+   */
+  protected $fileSystem;
+
+  /**
    * Current theme name.
    *
    * @var string
@@ -94,13 +102,16 @@ class ScssCompilerService implements ScssCompilerInterface {
    *   The request stack.
    * @param \Drupal\Core\Cache\CacheBackendInterface $cache
    *   The default cache bin.
+   * @param \Drupal\Core\File\FileSystemInterface $file_system
+   *   The file system service.
    */
-  public function __construct(ConfigFactoryInterface $config, ThemeManagerInterface $theme_manager, ModuleHandlerInterface $module_handler, RequestStack $request_stack, CacheBackendInterface $cache) {
+  public function __construct(ConfigFactoryInterface $config, ThemeManagerInterface $theme_manager, ModuleHandlerInterface $module_handler, RequestStack $request_stack, CacheBackendInterface $cache, FileSystemInterface $file_system) {
     $this->config = $config->get('scss_compiler.settings');
     $this->themeManager = $theme_manager;
     $this->moduleHandler = $module_handler;
     $this->request = $request_stack->getCurrentRequest();
     $this->cache = $cache;
+    $this->fileSystem = $file_system;
 
     $this->activeThemeName = $theme_manager->getActiveTheme()->getName();
     $this->cacheFolder = 'public://scss_compiler';
@@ -317,7 +328,7 @@ class ScssCompilerService implements ScssCompilerInterface {
           'sourceMapRootpath' => $host . '/',
         ]);
       }
-      file_prepare_directory($css_folder, FILE_CREATE_DIRECTORY);
+      $this->fileSystem->prepareDirectory($css_folder, FileSystemInterface::CREATE_DIRECTORY);
       // If custom css path defined, check if it located in the proper
       // theme/module folder else throw an error.
       if (substr($css_folder, 0, strlen($this->cacheFolder)) !== $this->cacheFolder) {

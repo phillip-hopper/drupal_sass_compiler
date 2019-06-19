@@ -193,7 +193,7 @@ function scss_compiler_page_attachments_alter(array &$attachments) {
 function scss_compiler_cache_flush() {
   if (Drupal::hasService('scss_compiler')) {
     if (!\Drupal::service('scss_compiler')->isCacheEnabled()) {
-      file_unmanaged_delete_recursive(Drupal::service('scss_compiler')->getCacheFolder());
+      \Drupal::service('file_system')->deleteRecursive(Drupal::service('scss_compiler')->getCacheFolder());
     }
   }
 }

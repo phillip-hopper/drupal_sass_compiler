@@ -1,4 +1,4 @@
 services:
   scss_compiler:
     class: Drupal\scss_compiler\ScssCompilerService
-    arguments: ['@config.factory', '@theme.manager', '@module_handler', '@request_stack', '@cache.default']
+    arguments: ['@config.factory', '@theme.manager', '@module_handler', '@request_stack', '@cache.default', '@file_system']
