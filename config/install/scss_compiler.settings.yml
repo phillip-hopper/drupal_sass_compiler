@@ -1,3 +1,4 @@
 cache: false
 sourcemaps: true
 output_format: 'compressed'
+last_modify_recompile: false

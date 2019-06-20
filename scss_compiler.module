@@ -72,6 +72,13 @@ function scss_compiler_form_system_performance_settings_alter(&$form, FormStateI
     '#default_value' => \Drupal::service('scss_compiler')->getOption('sourcemaps'),
   ];
 
+  $form['scss_compiler']['advanced']['scss_last_modify_recompile'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Enable last modify compilation'),
+    '#description' => t('Experimental. Compiles only files which was changed based on last modify time'),
+    '#default_value' => \Drupal::service('scss_compiler')->getOption('last_modify_recompile'),
+  ];
+
   $form['scss_compiler']['advanced']['scss_output_format'] = [
     '#type' => 'select',
     '#title' => t('Output format'),
@@ -116,6 +123,7 @@ function scss_compiler_system_performance_settings_submit(&$form, FormStateInter
     ->set('cache', $form_state->getValue('scss_cache'))
     ->set('sourcemaps', $form_state->getValue('scss_sourcemaps'))
     ->set('output_format', $form_state->getValue('scss_output_format'))
+    ->set('last_modify_recompile', $form_state->getValue('scss_last_modify_recompile'))
     ->save();
 }
 

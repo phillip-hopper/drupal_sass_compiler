@@ -90,6 +90,13 @@ class ScssCompilerService implements ScssCompilerInterface {
   protected $isCacheEnabled;
 
   /**
+   * List of last modified source files.
+   *
+   * @var array
+   */
+  protected $lastModifyList;
+
+  /**
    * Constructs a SCSS Compiler service object.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config
@@ -116,6 +123,22 @@ class ScssCompilerService implements ScssCompilerInterface {
     $this->activeThemeName = $theme_manager->getActiveTheme()->getName();
     $this->cacheFolder = 'public://scss_compiler';
     $this->isCacheEnabled = $this->config->get('cache');
+
+    if ($this->config->get('last_modify_recompile')) {
+      if ($cache = $this->cache->get('scss_compiler_modify_list')) {
+        $this->lastModifyList = $cache->data;
+      }
+    }
+
+  }
+
+  /**
+   * Saves last modify time of files to the cache.
+   */
+  public function __destruct() {
+    if ($this->config->get('last_modify_recompile')) {
+      $this->cache->set('scss_compiler_modify_list', $this->lastModifyList, CacheBackendInterface::CACHE_PERMANENT);
+    }
   }
 
   /**
@@ -340,13 +363,60 @@ class ScssCompilerService implements ScssCompilerInterface {
           throw new \Exception($error_message);
         }
       }
-      $content = $parser->compile(file_get_contents($scss_file['source_path']), $scss_file['source_path']);
+
+      $source_content = file_get_contents($scss_file['source_path']);
+      if ($this->config->get('last_modify_recompile') && !$this->checkLastModifyTime($scss_file, $source_content)) {
+        return;
+      }
+      $content = $parser->compile($source_content, $scss_file['source_path']);
       file_put_contents($scss_file['css_path'], trim($content));
 
     }
     catch (\Exception $e) {
       $this->messenger()->addError($e->getMessage());
     }
+  }
+
+  /**
+   * Checks if file was changed.
+   *
+   * @param array $source_file
+   *   Compilation file info.
+   * @param string $content
+   *   Content of source file.
+   *
+   * @return bool
+   *   TRUE if file was changed else FALSE.
+   */
+  protected function checkLastModifyTime(array &$source_file, &$content) {
+    // If file wasn't changed don't recompile it to increase performance.
+    // Experimental. Now supported only 1 level @import.
+    // @todo increase parsing depth.
+    $last_modify_time = filemtime($source_file['source_path']);
+    $source_folder = dirname($source_file['source_path']);
+    $import = [];
+    preg_match_all('/@import(.*);/', $content, $import);
+    if (!empty($import[1])) {
+      foreach ($import[1] as $file) {
+        $file_path = $source_folder . '/' . trim($file, '\'" ');
+        if (file_exists($file_path)) {
+          $file_modify_time = filemtime($file_path);
+          if ($file_modify_time > $last_modify_time) {
+            $last_modify_time = $file_modify_time;
+          }
+        }
+      }
+    }
+    if (empty($this->lastModifyList[$source_file['source_path']]) || !file_exists($source_file['css_path'])) {
+      $this->lastModifyList[$source_file['source_path']] = $last_modify_time;
+      return TRUE;
+    }
+    elseif ($last_modify_time > $this->lastModifyList[$source_file['source_path']]) {
+      $this->lastModifyList[$source_file['source_path']] = $last_modify_time;
+      return TRUE;
+    }
+
+    return FALSE;
   }
 
   /**
