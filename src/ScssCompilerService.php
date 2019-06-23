@@ -97,6 +97,13 @@ class ScssCompilerService implements ScssCompilerInterface {
   protected $lastModifyList;
 
   /**
+   * Flag indicates if need to update last modify list cache.
+   *
+   * @var bool
+   */
+  protected $fileIsModified;
+
+  /**
    * Constructs a SCSS Compiler service object.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config
@@ -124,7 +131,8 @@ class ScssCompilerService implements ScssCompilerInterface {
     $this->cacheFolder = 'public://scss_compiler';
     $this->isCacheEnabled = $this->config->get('cache');
 
-    if ($this->config->get('last_modify_recompile')) {
+    if (!$this->isCacheEnabled() && $this->config->get('check_modify_time')) {
+      $this->lastModifyList = [];
       if ($cache = $this->cache->get('scss_compiler_modify_list')) {
         $this->lastModifyList = $cache->data;
       }
@@ -136,8 +144,10 @@ class ScssCompilerService implements ScssCompilerInterface {
    * Saves last modify time of files to the cache.
    */
   public function __destruct() {
-    if ($this->config->get('last_modify_recompile')) {
-      $this->cache->set('scss_compiler_modify_list', $this->lastModifyList, CacheBackendInterface::CACHE_PERMANENT);
+    if (!$this->isCacheEnabled()) {
+      if ($this->config->get('check_modify_time') && $this->fileIsModified) {
+        $this->cache->set('scss_compiler_modify_list', $this->lastModifyList, CacheBackendInterface::CACHE_PERMANENT);
+      }
     }
   }
 
@@ -171,7 +181,7 @@ class ScssCompilerService implements ScssCompilerInterface {
   public function setCompileList(array $files) {
     // Save list of scss files which need to be recompiled to the cache.
     // Each theme has own list of files, to prevent recompile files
-    // which not loaded in current theme.
+    // which not loaded in active theme.
     $data = [];
     if ($cache = $this->cache->get('scss_compiler_list')) {
       $data = $cache->data;
@@ -207,12 +217,12 @@ class ScssCompilerService implements ScssCompilerInterface {
   /**
    * {@inheritdoc}
    */
-  public function compileAll($all = FALSE) {
+  public function compileAll($all = FALSE, $flush = FALSE) {
     $scss_files = $this->getCompileList($all);
     if (!empty($scss_files)) {
       foreach ($scss_files as $namespace) {
         foreach ($namespace as $scss_file) {
-          $this->compile($scss_file);
+          $this->compile($scss_file, $flush);
         }
       }
     }
@@ -290,7 +300,7 @@ class ScssCompilerService implements ScssCompilerInterface {
   /**
    * {@inheritdoc}
    */
-  public function compile(array $scss_file) {
+  public function compile(array $scss_file, $flush = FALSE) {
     try {
       if (!file_exists($scss_file['source_path'])) {
         $error_message = $this->t('File @path not found', [
@@ -358,14 +368,14 @@ class ScssCompilerService implements ScssCompilerInterface {
         $namespace_path = $this->getNamespacePath($scss_file['namespace']);
         if (strpos(realpath($css_folder), realpath($namespace_path)) !== 0) {
           $error_message = $this->t('Css destination path is wrong, @path', [
-            '@path' => $scss_file['css_path'],
+            '@path' => $scss_file['source_path'],
           ]);
           throw new \Exception($error_message);
         }
       }
 
       $source_content = file_get_contents($scss_file['source_path']);
-      if ($this->config->get('last_modify_recompile') && !$this->checkLastModifyTime($scss_file, $source_content)) {
+      if ($this->config->get('check_modify_time') && !$flush && !$this->checkLastModifyTime($scss_file, $source_content)) {
         return;
       }
       $content = $parser->compile($source_content, $scss_file['source_path']);
@@ -389,17 +399,25 @@ class ScssCompilerService implements ScssCompilerInterface {
    *   TRUE if file was changed else FALSE.
    */
   protected function checkLastModifyTime(array &$source_file, &$content) {
-    // If file wasn't changed don't recompile it to increase performance.
-    // Experimental. Now supported only 1 level @import.
-    // @todo increase parsing depth.
+    // If file wasn't changed and compiled css file exists don't recompile it
+    // to increase performance. Supports only 1 level @import.
     $last_modify_time = filemtime($source_file['source_path']);
     $source_folder = dirname($source_file['source_path']);
     $import = [];
     preg_match_all('/@import(.*);/', $content, $import);
     if (!empty($import[1])) {
       foreach ($import[1] as $file) {
-        $file_path = $source_folder . '/' . trim($file, '\'" ');
-        if (file_exists($file_path)) {
+        // Normalize @import path.
+        $file_path = trim($file, '\'" ');
+        $pathinfo = pathinfo($file_path);
+        $extension = '.scss';
+        $filename = $pathinfo['filename'];
+        $dirname = $pathinfo['dirname'] === '.' ? '' : $pathinfo['dirname'] . '/';
+
+        $file_path = $source_folder . '/' . $dirname . $filename . $extension;
+        $scss_path = $source_folder . '/' . $dirname . '_' . $filename . $extension;
+
+        if (file_exists($file_path) || file_exists($file_path = $scss_path)) {
           $file_modify_time = filemtime($file_path);
           if ($file_modify_time > $last_modify_time) {
             $last_modify_time = $file_modify_time;
@@ -409,10 +427,12 @@ class ScssCompilerService implements ScssCompilerInterface {
     }
     if (empty($this->lastModifyList[$source_file['source_path']]) || !file_exists($source_file['css_path'])) {
       $this->lastModifyList[$source_file['source_path']] = $last_modify_time;
+      $this->fileIsModified = TRUE;
       return TRUE;
     }
     elseif ($last_modify_time > $this->lastModifyList[$source_file['source_path']]) {
       $this->lastModifyList[$source_file['source_path']] = $last_modify_time;
+      $this->fileIsModified = TRUE;
       return TRUE;
     }
 

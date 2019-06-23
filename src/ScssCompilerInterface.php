@@ -16,8 +16,10 @@ interface ScssCompilerInterface {
    *   - namespace: theme/module name. Required.
    *   - source_path: source file path. Required.
    *   - css_path: css file destination path. Required.
+   * @param bool $flush
+   *   If TRUE ignore last modified time.
    */
-  public function compile(array $scss_file);
+  public function compile(array $scss_file, $flush);
 
   /**
    * Compiles all scss files which was registered.
@@ -25,8 +27,10 @@ interface ScssCompilerInterface {
    * @param bool $all
    *   If TRUE compiles all scss files from all themes in system,
    *   else compiles only scss files from active theme.
+   * @param bool $flush
+   *   If TRUE ignore last modified time.
    */
-  public function compileAll($all);
+  public function compileAll($all, $flush);
 
   /**
    * Returns list of scss files which need to be recompiled.
