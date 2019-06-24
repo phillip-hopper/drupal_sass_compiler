@@ -383,6 +383,11 @@ class ScssCompilerService implements ScssCompilerInterface {
 
     }
     catch (\Exception $e) {
+      // If error occurrence during compilation, reset last modified time of the
+      // file.
+      if (!empty($this->lastModifyList[$scss_file['source_path']])) {
+        $this->lastModifyList[$scss_file['source_path']] = 0;
+      }
       $this->messenger()->addError($e->getMessage());
     }
   }

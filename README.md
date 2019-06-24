@@ -24,6 +24,15 @@ installation instruction.
 ## CONFIGURATION
 All module settings are on the performance page.
 
+By default module compiles files based on last modified time, if scss file
+wasn't changed and compiled css file exists, file will not recompile. Module
+tracks last modified time of source file which defined in libraries.yml and
+all files which included in this file via @import directive. It was tested on
+Bootstrap 4 and hadn't any errors during compilation, if you get any error,
+create issue with error description, thanks.
+You can disable it in settings, uncheck "Check file modified time" option and
+all files will be recompiled on each request.
+
 ## USAGE
 ```yml
 # my_module.libraries.yml
