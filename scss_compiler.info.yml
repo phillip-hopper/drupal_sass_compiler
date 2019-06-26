@@ -1,4 +1,4 @@
-name: SCSS compiler
+name: SCSS Compiler
 description: Automatically compiles scss files into css
 package: Development
 
