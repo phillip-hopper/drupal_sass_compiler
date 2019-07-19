@@ -361,7 +361,10 @@ class ScssCompilerService implements ScssCompilerInterface {
           'sourceMapRootpath' => $host . '/',
         ]);
       }
-      $this->fileSystem->prepareDirectory($css_folder, FileSystemInterface::CREATE_DIRECTORY);
+      // Use deprecated code to supports drupal 8.5.x+.
+      // @todo remove on Drupal 9.x release.
+      file_prepare_directory($css_folder, FILE_CREATE_DIRECTORY);
+
       // If custom css path defined, check if it located in the proper
       // theme/module folder else throw an error.
       if (substr($css_folder, 0, strlen($this->cacheFolder)) !== $this->cacheFolder) {

@@ -201,7 +201,9 @@ function scss_compiler_page_attachments_alter(array &$attachments) {
 function scss_compiler_cache_flush() {
   if (Drupal::hasService('scss_compiler')) {
     if (!\Drupal::service('scss_compiler')->isCacheEnabled()) {
-      \Drupal::service('file_system')->deleteRecursive(Drupal::service('scss_compiler')->getCacheFolder());
+      // Use deprecated code to supports drupal 8.5.x+.
+      // @todo remove on Drupal 9.x release.
+      file_unmanaged_delete_recursive(Drupal::service('scss_compiler')->getCacheFolder());
     }
   }
 }
