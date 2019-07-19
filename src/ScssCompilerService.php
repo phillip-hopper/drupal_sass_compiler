@@ -204,7 +204,14 @@ class ScssCompilerService implements ScssCompilerInterface {
     if ($cache = $this->cache->get('scss_compiler_list')) {
       $data = $cache->data;
       if ($all) {
-        $files = array_merge_recursive(...array_values($data));
+        foreach ($data as $namespace) {
+          foreach ($namespace as $key => $file) {
+            if (!isset($files[$key])) {
+              $files[$key] = [];
+            }
+            $files[$key] = array_merge($files[$key], $file);
+          }
+        }
       }
       elseif (!empty($data[$this->activeThemeName])) {
         $files = $data[$this->activeThemeName];
