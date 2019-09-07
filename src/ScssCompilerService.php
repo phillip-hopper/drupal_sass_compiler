@@ -351,6 +351,7 @@ class ScssCompilerService implements ScssCompilerInterface {
       $parser->setImportPaths([
         dirname($scss_file['source_path']),
         DRUPAL_ROOT,
+        [$this, 'getImportNamespace'],
       ]);
 
       // Add theme/module path to compiler to build path to static resources.
@@ -400,6 +401,47 @@ class ScssCompilerService implements ScssCompilerInterface {
       }
       $this->messenger()->addError($e->getMessage());
     }
+  }
+
+  /**
+   * Processes the import paths using prefixed module/theme.
+   *
+   * @param string $path
+   *   The import path to process.
+   *
+   * @return string|null
+   *   Path to file or NULL if path not found.
+   */
+  public function getImportNamespace($path) {
+    if (!preg_match('#([^/]+)/#', $path, $match)) {
+      return NULL;
+    }
+
+    $namespace = $match[1];
+    // Prevent name conflicts when module/theme name same as subfolder name,
+    // use @module to import from module.
+    if (substr($namespace, 0, 1) === '@') {
+      $namespace = substr($namespace, 1);
+    }
+    $namespace_path = substr($path, strlen($match[0]));
+
+    $type = 'theme';
+    if ($this->moduleHandler->moduleExists($namespace)) {
+      $type = 'module';
+    }
+    $path = @drupal_get_path($type, $namespace);
+    if (empty($path)) {
+      return NULL;
+    }
+
+    // Try different extensions to allow for import from the usual scss sources.
+    $base_path = DRUPAL_ROOT . '/' . $path . '/' . $namespace_path;
+    foreach (['', '.scss', '.css'] as $extension) {
+      if ($path = realpath($base_path . $extension)) {
+        return $path;
+      }
+    }
+    return NULL;
   }
 
   /**
