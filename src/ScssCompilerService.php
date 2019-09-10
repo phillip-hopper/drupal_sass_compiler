@@ -104,6 +104,13 @@ class ScssCompilerService implements ScssCompilerInterface {
   protected $fileIsModified;
 
   /**
+   * Additional import paths for compiler.
+   *
+   * @var array
+   */
+  protected $additionalImportPaths;
+
+  /**
    * Constructs a SCSS Compiler service object.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config
@@ -343,16 +350,26 @@ class ScssCompilerService implements ScssCompilerInterface {
         $this->parser->setFormatter($this->getScssPhpFormatClass($this->getOption('output_format')));
         // Disable utf-8 support to increase performance.
         $this->parser->setEncoding(TRUE);
+
+        $this->additionalImportPaths = [];
+        $this->moduleHandler->alter('scss_compiler_import_paths', $this->additionalImportPaths);
+        if (!is_array($this->additionalImportPaths)) {
+          $this->additionalImportPaths = [];
+        }
       }
 
       // Build path for @import, if import not found relative to current file,
       // find relative to DRUPAL_ROOT, for example, load scss from another
       // module, @import modules/custom/my_module/scss/mixins.
-      $parser->setImportPaths([
+      $import_paths = [
         dirname($scss_file['source_path']),
         DRUPAL_ROOT,
         [$this, 'getImportNamespace'],
-      ]);
+      ];
+      if ($this->additionalImportPaths) {
+        $import_paths = array_merge($import_paths, $this->additionalImportPaths);
+      }
+      $parser->setImportPaths($import_paths);
 
       // Add theme/module path to compiler to build path to static resources.
       $parser->drupalPath = '/' . $this->getNamespacePath($scss_file['namespace']) . '/';
