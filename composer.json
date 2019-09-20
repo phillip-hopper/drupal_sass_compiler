@@ -11,6 +11,6 @@
     "source": "https://git.drupalcode.org/project/scss_compiler"
   },
   "require": {
-    "scssphp/scssphp": "dev-master"
+    "scssphp/scssphp": "dev-master@dev"
   }
 }
