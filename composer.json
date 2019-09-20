@@ -4,6 +4,7 @@
   "type": "drupal-module",
   "license": "GPL-2.0+",
   "homepage": "https://www.drupal.org/project/scss_compiler",
+  "minimum-stability": "dev",
   "support": {
     "issues": "https://drupal.org/project/issues/scss_compiler",
     "source": "https://git.drupalcode.org/project/scss_compiler"
