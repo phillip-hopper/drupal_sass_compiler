@@ -362,7 +362,7 @@ class ScssCompilerService implements ScssCompilerInterface {
       // find relative to DRUPAL_ROOT, for example, load scss from another
       // module, @import modules/custom/my_module/scss/mixins.
       $import_paths = [
-        dirname($scss_file['source_path']),
+        $this->fileSystem->realpath(dirname($scss_file['source_path'])),
         DRUPAL_ROOT,
         [$this, 'getImportNamespace'],
       ];
