@@ -264,14 +264,14 @@ class ScssCompilerService implements ScssCompilerInterface {
 
       $namespace_path = $this->getNamespacePath($info['namespace']);
 
+      $assets_path = '';
       if (isset($info['assets_path'])) {
-        $assets_path = trim($this->replaceTokens($info['assets_path']), '/') . '/';
-      }
-      else {
-        $assets_path = '';
-        if (!empty($namespace_path)) {
-          $assets_path = trim($namespace_path, '/') . '/';
+        if (substr($info['assets_path'], 0, 1) === '@') {
+          $assets_path = '/' . trim($this->replaceTokens($info['assets_path']), '/. ') . '/';
         }
+      }
+      elseif (!empty($namespace_path)) {
+        $assets_path = '/' . trim($namespace_path, '/') . '/';
       }
 
       $name = pathinfo($info['data'], PATHINFO_FILENAME);

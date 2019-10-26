@@ -36,7 +36,7 @@ class Compiler extends ScssPhpCompiler {
         }
         elseif (substr($args, 0, 1) === '@') {
           $path = \Drupal::service('scss_compiler')->replaceTokens($args);
-          return "$value[1](\"$path\")";
+          return "$value[1](\"/$path\")";
         }
         else {
           return "$value[1](\"$this->assetsPath$args\")";
