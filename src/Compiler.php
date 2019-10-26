@@ -18,7 +18,7 @@ class Compiler extends ScssPhpCompiler {
    *
    * @var string
    */
-  public $drupalPath = '';
+  public $assetsPath = '';
 
   /**
    * {@inheritdoc}
@@ -34,8 +34,12 @@ class Compiler extends ScssPhpCompiler {
         if (substr($args, 0, 5) === 'data:') {
           return "$value[1](\"$args\")";
         }
+        elseif (substr($args, 0, 1) === '@') {
+          $path = \Drupal::service('scss_compiler')->replaceTokens($args);
+          return "$value[1](\"$path\")";
+        }
         else {
-          return "$value[1](\"$this->drupalPath$args\")";
+          return "$value[1](\"$this->assetsPath$args\")";
         }
       }
       else {

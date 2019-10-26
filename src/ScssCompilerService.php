@@ -111,6 +111,13 @@ class ScssCompilerService implements ScssCompilerInterface {
   protected $additionalImportPaths;
 
   /**
+   * List of replacement tokens.
+   *
+   * @var array
+   */
+  protected $tokens;
+
+  /**
    * Constructs a SCSS Compiler service object.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config
@@ -137,6 +144,9 @@ class ScssCompilerService implements ScssCompilerInterface {
     $this->activeThemeName = $theme_manager->getActiveTheme()->getName();
     $this->cacheFolder = 'public://scss_compiler';
     $this->isCacheEnabled = $this->config->get('cache');
+    $this->tokens = [
+      '@drupal_root' => '',
+    ];
 
     if (!$this->isCacheEnabled() && $this->config->get('check_modify_time')) {
       $this->lastModifyList = [];
@@ -253,12 +263,28 @@ class ScssCompilerService implements ScssCompilerInterface {
       }
 
       $namespace_path = $this->getNamespacePath($info['namespace']);
-      $name = pathinfo($info['data'], PATHINFO_FILENAME);
-      if (!empty($info['css_path'])) {
-        // If custom css path defined, build path relative to theme/module.
-        $css_path = $namespace_path . '/' . trim($info['css_path'], '/. ') . '/' . $name . '.css';
+
+      if (isset($info['assets_path'])) {
+        $assets_path = trim($this->replaceTokens($info['assets_path']), '/') . '/';
       }
       else {
+        $assets_path = '';
+        if (!empty($namespace_path)) {
+          $assets_path = trim($namespace_path, '/') . '/';
+        }
+      }
+
+      $name = pathinfo($info['data'], PATHINFO_FILENAME);
+      if (!empty($info['css_path'])) {
+        if (substr($info['css_path'], 0, 1) === '@') {
+          $css_path = trim($this->replaceTokens($info['css_path']), '/. ') . '/' . $name . '.css';
+        }
+        elseif (!empty($namespace_path)) {
+          $css_path = $namespace_path . '/' . trim($info['css_path'], '/. ') . '/' . $name . '.css';
+        }
+      }
+
+      if (!isset($css_path)) {
         // Get source file path relative to theme/module and add it to css path
         // to prevent overwriting files when two source files with the same name
         // defined in different folders.
@@ -275,6 +301,7 @@ class ScssCompilerService implements ScssCompilerInterface {
       return [
         'name'        => $name,
         'namespace'   => $info['namespace'],
+        'assets_path' => $assets_path,
         'source_path' => $info['data'],
         'css_path'    => $css_path,
       ];
@@ -282,6 +309,34 @@ class ScssCompilerService implements ScssCompilerInterface {
     catch (\Exception $e) {
       $this->messenger()->addError($e->getMessage());
     }
+  }
+
+  /**
+   * Replace path tokens into real path.
+   *
+   * @param string $path
+   *   String for replacement.
+   */
+  public function replaceTokens($path) {
+    // If string starts with @ replace it with the proper path.
+    if (substr($path, 0, 1) === '@') {
+      $namespace = [];
+      if (preg_match('#([^/]+)/#', $path, $namespace)) {
+        $namespace_path = $this->getNamespacePath(substr($namespace[1], 1));
+        if (!$namespace_path) {
+          return FALSE;
+        }
+        $path = str_replace($namespace[1], $namespace_path, $path);
+      }
+      else {
+        if (!$namespace_path = $this->getNamespacePath(substr($path, 1))) {
+          return FALSE;
+        }
+        $path = $namespace_path;
+      }
+    }
+
+    return $path;
   }
 
   /**
@@ -297,17 +352,18 @@ class ScssCompilerService implements ScssCompilerInterface {
    *   Path to theme/module of given namespace.
    */
   protected function getNamespacePath($namespace) {
+    if (isset($this->tokens[$namespace])) {
+      return $this->tokens[$namespace];
+    }
     $type = 'theme';
     if ($this->moduleHandler->moduleExists($namespace)) {
       $type = 'module';
     }
     $path = @drupal_get_path($type, $namespace);
     if (empty($path)) {
-      $error_message = $this->t('@namespace is invalid', [
-        '@namespace' => $type . ' ' . $namespace,
-      ]);
-      throw new \Exception($error_message);
+      $path = '';
     }
+    $this->tokens[$namespace] = $path;
     return $path;
   }
 
@@ -371,8 +427,8 @@ class ScssCompilerService implements ScssCompilerInterface {
       }
       $parser->setImportPaths($import_paths);
 
-      // Add theme/module path to compiler to build path to static resources.
-      $parser->drupalPath = '/' . $this->getNamespacePath($scss_file['namespace']) . '/';
+      // Add assets path to compiler. By default it's theme/module root folder.
+      $parser->assetsPath = isset($scss_file['assets_path']) ? $scss_file['assets_path'] : '';
 
       $css_folder = dirname($scss_file['css_path']);
       if ($this->getOption('sourcemaps')) {
@@ -389,18 +445,6 @@ class ScssCompilerService implements ScssCompilerInterface {
       // Use deprecated code to supports drupal 8.5.x+.
       // @todo remove on Drupal 9.x release.
       file_prepare_directory($css_folder, FILE_CREATE_DIRECTORY);
-
-      // If custom css path defined, check if it located in the proper
-      // theme/module folder else throw an error.
-      if (substr($css_folder, 0, strlen($this->cacheFolder)) !== $this->cacheFolder) {
-        $namespace_path = $this->getNamespacePath($scss_file['namespace']);
-        if (strpos(realpath($css_folder), realpath($namespace_path)) !== 0) {
-          $error_message = $this->t('Css destination path is wrong, @path', [
-            '@path' => $scss_file['source_path'],
-          ]);
-          throw new \Exception($error_message);
-        }
-      }
 
       $source_content = file_get_contents($scss_file['source_path']);
       if ($this->config->get('check_modify_time') && !$flush && !$this->checkLastModifyTime($scss_file, $source_content)) {
