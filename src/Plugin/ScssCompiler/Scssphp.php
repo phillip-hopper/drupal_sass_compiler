@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\scss_compiler;
+namespace Drupal\scss_compiler\Plugin\ScssCompiler;
 
 use ScssPhp\ScssPhp\Compiler as ScssPhpCompiler;
 use ScssPhp\ScssPhp\Type;
@@ -11,7 +11,7 @@ use ScssPhp\ScssPhp\Type;
  * Adds path variable to handle path to static resources relative to
  * theme/module.
  */
-class Compiler extends ScssPhpCompiler {
+class Scssphp extends ScssPhpCompiler {
 
   /**
    * Path to theme/module.

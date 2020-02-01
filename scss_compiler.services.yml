@@ -2,3 +2,6 @@ services:
   scss_compiler:
     class: Drupal\scss_compiler\ScssCompilerService
     arguments: ['@config.factory', '@theme.manager', '@module_handler', '@request_stack', '@cache.default', '@file_system']
+  plugin.manager.scss_compiler:
+    class: Drupal\scss_compiler\ScssCompilerManager
+    parent: default_plugin_manager

@@ -2,3 +2,6 @@ cache: false
 sourcemaps: true
 output_format: 'compressed'
 check_modify_time: true
+plugins:
+  scss: 'scss_compiler_scssphp'
+  # less: 'scss_compiler_lessphp'

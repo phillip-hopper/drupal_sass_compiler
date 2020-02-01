@@ -57,7 +57,7 @@ function scss_compiler_form_system_performance_settings_alter(&$form, FormStateI
 
   $form['scss_compiler']['scss_cache'] = [
     '#type' => 'checkbox',
-    '#title' => t('Enable SCSS cache'),
+    '#title' => t('Enable compiler cache'),
     '#default_value' => \Drupal::service('scss_compiler')->isCacheEnabled(),
   ];
 
@@ -68,7 +68,7 @@ function scss_compiler_form_system_performance_settings_alter(&$form, FormStateI
 
   $form['scss_compiler']['advanced']['scss_sourcemaps'] = [
     '#type' => 'checkbox',
-    '#title' => t('Enable SCSS sourcemaps'),
+    '#title' => t('Enable sourcemaps'),
     '#default_value' => \Drupal::service('scss_compiler')->getOption('sourcemaps'),
   ];
 
@@ -103,6 +103,32 @@ function scss_compiler_form_system_performance_settings_alter(&$form, FormStateI
     ],
   ];
 
+  $CompilerPluginManager = \Drupal::service('plugin.manager.scss_compiler');
+  $compilers = $CompilerPluginManager->getDefinitions();
+  $options = [];
+  if (!empty($compilers)) {
+    foreach ($compilers as $compiler) {
+      foreach ($compiler['extensions'] as $key => $extension) {
+        $options[$key][$compiler['id']] = $compiler['name'];
+      }
+    }
+  }
+  $form['scss_compiler']['advanced']['plugins'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Default compilers'),
+    '#description' => 'Lessphp library not included by default. You need to install it manually via composer "composer require wikimedia/less.php"',
+    '#tree' => TRUE,
+  ];
+  foreach ($options as $key => $option) {
+    reset($option);
+    $form['scss_compiler']['advanced']['plugins'][$key] = [
+      '#type' => 'select',
+      '#options' => ['none' => t('Disabled')] + $option,
+      '#title' => $key,
+      '#default_value' => !empty(\Drupal::service('scss_compiler')->getOption('plugins')[$key]) ? \Drupal::service('scss_compiler')->getOption('plugins')[$key] : 'none',
+    ];
+  }
+
   $form['#submit'][] = 'scss_compiler_system_performance_settings_submit';
 
 }
@@ -119,11 +145,20 @@ function scss_compiler_recompile() {
  * Saves scss compiler settings on form submit.
  */
 function scss_compiler_system_performance_settings_submit(&$form, FormStateInterface $form_state) {
+
+  $compilers = $form_state->getValue('plugins');
+  foreach ($compilers as $key => $compiler) {
+    if ($compiler === 'none') {
+      unset($compilers[$key]);
+    }
+  }
+
   \Drupal::service('config.factory')->getEditable('scss_compiler.settings')
     ->set('cache', $form_state->getValue('scss_cache'))
     ->set('sourcemaps', $form_state->getValue('scss_sourcemaps'))
     ->set('output_format', $form_state->getValue('scss_output_format'))
     ->set('check_modify_time', $form_state->getValue('scss_check_modify_time'))
+    ->set('plugins', $compilers)
     ->save();
 }
 
@@ -133,11 +168,16 @@ function scss_compiler_system_performance_settings_submit(&$form, FormStateInter
 function scss_compiler_library_info_alter(&$libraries, $extension) {
   // Find all scss files, and add it extension to file info
   // to use it in hook_css_alter.
+  $plugins = \Drupal::service('scss_compiler')->getOption('plugins');
+  if (empty($plugins)) {
+    return;
+  }
+  $extensions = array_flip($plugins);
   foreach ($libraries as &$library) {
     if (!empty($library['css'])) {
       foreach ($library['css'] as &$group) {
         foreach ($group as $key => &$file) {
-          if (pathinfo($key, PATHINFO_EXTENSION) === 'scss') {
+          if (in_array(pathinfo($key, PATHINFO_EXTENSION), $extensions)) {
             $file['namespace'] = $extension;
           }
         }
@@ -165,8 +205,13 @@ function scss_compiler_css_alter(&$css, AttachedAssetsInterface $assets) {
   // Each scss file has name, source_path, css_path,
   // namespace - theme/module name, uses to build path to static resources.
   $scss_files = [];
+  $plugins = \Drupal::service('scss_compiler')->getOption('plugins');
+  if (empty($plugins)) {
+    return;
+  }
+  $extensions = array_flip($plugins);
   foreach ($css as $path => $file) {
-    if (pathinfo($path, PATHINFO_EXTENSION) === 'scss') {
+    if (in_array(pathinfo($path, PATHINFO_EXTENSION), $extensions)) {
       $scss_file = Drupal::service('scss_compiler')->buildCompilationFileInfo($file);
       if (empty($scss_file)) {
         continue;
