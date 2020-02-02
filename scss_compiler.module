@@ -8,6 +8,7 @@
 use Drupal\Core\Asset\AttachedAssetsInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\scss_compiler\ScssCompilerPluginInterface;
 
 /**
  * Implements hook_help().
@@ -103,8 +104,8 @@ function scss_compiler_form_system_performance_settings_alter(&$form, FormStateI
     ],
   ];
 
-  $CompilerPluginManager = \Drupal::service('plugin.manager.scss_compiler');
-  $compilers = $CompilerPluginManager->getDefinitions();
+  $compilerPluginManager = \Drupal::service('plugin.manager.scss_compiler');
+  $compilers = $compilerPluginManager->getDefinitions();
   $options = [];
   if (!empty($compilers)) {
     foreach ($compilers as $compiler) {
@@ -116,21 +117,46 @@ function scss_compiler_form_system_performance_settings_alter(&$form, FormStateI
   $form['scss_compiler']['advanced']['plugins'] = [
     '#type' => 'fieldset',
     '#title' => t('Default compilers'),
-    '#description' => 'Lessphp library not included by default. You need to install it manually via composer "composer require wikimedia/less.php"',
     '#tree' => TRUE,
   ];
   foreach ($options as $key => $option) {
-    reset($option);
+    $active = $form_state->getValue('plugins')[$key];
+    $status = NULL;
+    if (empty($active)) {
+      if (!empty(\Drupal::service('scss_compiler')->getOption('plugins')[$key])) {
+        $active = \Drupal::service('scss_compiler')->getOption('plugins')[$key];
+      }
+    }
+    if (!empty($compilers[$active]['class'])) {
+      $status = $compilers[$active]['class']::getStatus();
+      if ($status === TRUE) {
+        $status = $compilers[$active]['class']::getVersion();
+      }
+    }
+
     $form['scss_compiler']['advanced']['plugins'][$key] = [
       '#type' => 'select',
       '#options' => ['none' => t('Disabled')] + $option,
       '#title' => $key,
       '#default_value' => !empty(\Drupal::service('scss_compiler')->getOption('plugins')[$key]) ? \Drupal::service('scss_compiler')->getOption('plugins')[$key] : 'none',
+      '#field_suffix' => !empty($status) ? $status : '',
+      '#ajax' => [
+        'wrapper' => $form['#id'],
+        'callback' => 'scss_compiler_form_system_performance_settings_ajax_callback',
+      ],
     ];
   }
 
   $form['#submit'][] = 'scss_compiler_system_performance_settings_submit';
 
+}
+
+/**
+ * Plugins select ajax callback.
+ */
+function scss_compiler_form_system_performance_settings_ajax_callback(&$form, FormStateInterface $form_state) {
+  $form['scss_compiler']['advanced']['#open'] = TRUE;
+  return $form;
 }
 
 /**

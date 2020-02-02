@@ -9,11 +9,11 @@ use Drupal\Core\Plugin\DefaultPluginManager;
 /**
  * Provides an Scss Compiler plugin manager.
  *
- * @see \Drupal\scss_compiler\Annotation\ScssCompiler
- * @see \Drupal\scss_compiler\ScssCompilerManagerInterface
+ * @see \Drupal\scss_compiler\Annotation\ScssCompilerPlugin
+ * @see \Drupal\scss_compiler\ScssCompilerPluginInterface
  * @see plugin_api
  */
-class ScssCompilerManager extends DefaultPluginManager {
+class ScssCompilerPluginManager extends DefaultPluginManager {
 
   /**
    * List of active compiler instances.
@@ -23,7 +23,7 @@ class ScssCompilerManager extends DefaultPluginManager {
   protected $compilers;
 
   /**
-   * Constructs a ScssCompilerManager object.
+   * Constructs a ScssCompilerPluginManager object.
    *
    * @param \Traversable $namespaces
    *   An object that implements \Traversable which contains the root paths
@@ -38,8 +38,8 @@ class ScssCompilerManager extends DefaultPluginManager {
       'Plugin/ScssCompiler',
       $namespaces,
       $module_handler,
-      '\Drupal\scss_compiler\ScssCompilerManagerInterface',
-      '\Drupal\scss_compiler\Annotation\ScssCompiler'
+      '\Drupal\scss_compiler\ScssCompilerPluginInterface',
+      '\Drupal\scss_compiler\Annotation\ScssCompilerPlugin'
     );
     $this->alterInfo('scss_compiler_info');
     $this->setCacheBackend($cache_backend, 'scss_compiler_info_plugins');
@@ -48,7 +48,7 @@ class ScssCompilerManager extends DefaultPluginManager {
   /**
    * Returns compiler instance by id.
    *
-   * @return \Drupal\scss_compiler\ScssCompilerManagerInterface
+   * @return \Drupal\scss_compiler\ScssCompilerPluginInterface
    *   Compiler instance.
    */
   public function getInstanceById($id) {

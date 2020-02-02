@@ -2,13 +2,14 @@
 
 namespace Drupal\scss_compiler\Plugin\ScssCompiler;
 
-use Drupal\scss_compiler\ScssCompilerManagerInterface;
+use Drupal\scss_compiler\ScssCompilerPluginInterface;
 use Drupal\scss_compiler\Plugin\ScssCompiler\Scssphp as Compiler;
+use ScssPhp\ScssPhp\Version;
 
 /**
  * Plugin implementation of the Scss compiler.
  *
- * @ScssCompiler(
+ * @ScssCompilerPlugin(
  *   id   = "scss_compiler_scssphp",
  *   name = "ScssPhp Compiler",
  *   description = "Compiler for SCSS written in PHP",
@@ -17,12 +18,12 @@ use Drupal\scss_compiler\Plugin\ScssCompiler\Scssphp as Compiler;
  *   }
  * )
  */
-class ScssphpCompiler implements ScssCompilerManagerInterface {
+class ScssphpCompiler implements ScssCompilerPluginInterface {
 
   /**
    * Compiler object instance.
    *
-   * @var \Drupal\scss_compiler\Plugin\ScssCompiler\Compiler
+   * @var \Drupal\scss_compiler\Plugin\ScssCompiler\Scssphp
    */
   protected $parser;
 
@@ -31,10 +32,35 @@ class ScssphpCompiler implements ScssCompilerManagerInterface {
    */
   public function __construct() {
 
+    $status = self::getStatus();
+    if ($status !== TRUE) {
+      throw new \Exception($status);
+    }
+
+    $this->parser = new Compiler();
+    $this->parser->setFormatter($this->getScssPhpFormatClass(\Drupal::service('scss_compiler')->getOption('output_format')));
+    // Disable utf-8 support to increase performance.
+    $this->parser->setEncoding(TRUE);
+
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getVersion() {
+    if (class_exists('ScssPhp\ScssPhp\Version')) {
+      return Version::VERSION;
+    }
+    return FALSE;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getStatus() {
     $compiler_class_exists = class_exists('ScssPhp\ScssPhp\Compiler');
     if (!$compiler_class_exists && !file_exists(DRUPAL_ROOT . '/libraries/scssphp/scss.inc.php')) {
-      $error_message = t('SCSS Compiler library not found. Visit status page for more information.');
-      throw new \Exception($error_message);
+      $error_message = t('ScssPhp Compiler library not found. Install it via composer "composer require scssphp/scssphp"');
     }
 
     // If library didn't autoload from the vendor folder, load it from the
@@ -49,15 +75,12 @@ class ScssphpCompiler implements ScssCompilerManagerInterface {
         $error_message = t('leafo/scssphp no longer supported. Update compiler library to scssphp/scssphp @url', [
           '@url' => '(https://github.com/scssphp/scssphp/releases)',
         ]);
-        throw new \Exception($error_message);
       }
     }
-
-    $this->parser = new Compiler();
-    $this->parser->setFormatter($this->getScssPhpFormatClass(\Drupal::service('scss_compiler')->getOption('output_format')));
-    // Disable utf-8 support to increase performance.
-    $this->parser->setEncoding(TRUE);
-
+    if (!empty($error_message)) {
+      return $error_message;
+    }
+    return TRUE;
   }
 
   /**

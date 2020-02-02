@@ -5,13 +5,13 @@ namespace Drupal\scss_compiler\Annotation;
 use Drupal\Component\Annotation\Plugin;
 
 /**
- * Defines an ScssCompiler annotation object.
+ * Defines a ScssCompiler plugin annotation object.
  *
  * Plugin Namespace: Plugin\ScssCompiler.
  *
  * @Annotation
  */
-class ScssCompiler extends Plugin {
+class ScssCompilerPlugin extends Plugin {
 
   /**
    * The compiler plugin ID.

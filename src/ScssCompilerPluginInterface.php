@@ -5,7 +5,7 @@ namespace Drupal\scss_compiler;
 /**
  * Provides an interface defining a SCSS Compiler plugins.
  */
-interface ScssCompilerManagerInterface {
+interface ScssCompilerPluginInterface {
 
   /**
    * Compiles single source file.
@@ -29,5 +29,21 @@ interface ScssCompilerManagerInterface {
    *   Last modify timestamp.
    */
   public function checkLastModifyTime(array &$source_file);
+
+  /**
+   * Returns status of compiler library.
+   *
+   * @return string|bool
+   *   TRUE if library installed or string with error message.
+   */
+  public static function getStatus();
+
+  /**
+   * Returns compiler version.
+   *
+   * @return string|bool
+   *   Compiler version or FALSE if version not defined.
+   */
+  public static function getVersion();
 
 }
