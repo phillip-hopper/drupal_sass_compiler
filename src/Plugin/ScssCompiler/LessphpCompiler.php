@@ -34,6 +34,13 @@ class LessphpCompiler implements ScssCompilerPluginInterface {
       throw new \Exception($status);
     }
     $this->parser = new \Less_Parser();
+    $format = \Drupal::service('scss_compiler')->getOption('output_format');
+    switch ($format) {
+      case 'compressed':
+      case 'crunched':
+        $this->parser->setOption('compress', TRUE);
+        break;
+    }
   }
 
   /**
@@ -71,8 +78,8 @@ class LessphpCompiler implements ScssCompilerPluginInterface {
     if (\Drupal::service('scss_compiler')->getAdditionalImportPaths()) {
       $import_paths = array_merge($import_paths, \Drupal::service('scss_compiler')->getAdditionalImportPaths());
     }
-
     $this->parser->setImportDirs($import_paths);
+    $this->parser->setOption('import_callback', [$this, 'importCallback']);
 
     $css_folder = dirname($scss_file['css_path']);
     if (\Drupal::service('scss_compiler')->getOption('sourcemaps')) {
@@ -124,6 +131,21 @@ class LessphpCompiler implements ScssCompilerPluginInterface {
       }
     }
     return $last_modify_time;
+  }
+
+  /**
+   * Replaces tokens in import paths.
+   *
+   * @param \Less_Tree_Import $import
+   *   Compiler import object.
+   */
+  public function importCallback(\Less_Tree_Import $import) {
+    if (!empty($import->path->value)) {
+      $path = \Drupal::service('scss_compiler')->replaceTokens($import->path->value);
+      if ($path) {
+        $import->path->value = $path;
+      }
+    }
   }
 
 }
