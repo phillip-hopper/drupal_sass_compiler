@@ -1,5 +1,5 @@
-name: SCSS Compiler
-description: Automatically compiles scss files into css
+name: SCSS/Less Compiler
+description: Automatically compiles scss/less files into css
 package: Development
 
 type: module

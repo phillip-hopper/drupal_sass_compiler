@@ -95,7 +95,7 @@ class LessphpCompiler implements ScssCompilerPluginInterface {
     }
 
     file_prepare_directory($css_folder, FILE_CREATE_DIRECTORY);
-    $this->parser->parseFile($scss_file['source_path'], '/' . $scss_file['source_path']);
+    $this->parser->parseFile($scss_file['source_path'], $scss_file['assets_path']);
     $content = $this->parser->getCss();
 
     return $content;
