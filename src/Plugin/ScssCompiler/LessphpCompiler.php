@@ -2,7 +2,7 @@
 
 namespace Drupal\scss_compiler\Plugin\ScssCompiler;
 
-use Drupal\scss_compiler\ScssCompilerPluginInterface;
+use Drupal\scss_compiler\ScssCompilerPluginBase;
 
 /**
  * Plugin implementation of the Less compiler.
@@ -16,7 +16,7 @@ use Drupal\scss_compiler\ScssCompilerPluginInterface;
  *   }
  * )
  */
-class LessphpCompiler implements ScssCompilerPluginInterface {
+class LessphpCompiler extends ScssCompilerPluginBase {
 
   /**
    * Compiler object instance.
@@ -26,15 +26,15 @@ class LessphpCompiler implements ScssCompilerPluginInterface {
   protected $parser;
 
   /**
-   * Constructs LessphpCompiler object.
+   * {@inheritdoc}
    */
-  public function __construct() {
+  public function init() {
     $status = self::getStatus();
     if ($status !== TRUE) {
       throw new \Exception($status);
     }
     $this->parser = new \Less_Parser();
-    $format = \Drupal::service('scss_compiler')->getOption('output_format');
+    $format = $this->scssCompiler->getOption('output_format');
     switch ($format) {
       case 'compressed':
       case 'crunched':
@@ -75,16 +75,16 @@ class LessphpCompiler implements ScssCompilerPluginInterface {
       dirname($scss_file['source_path']),
       DRUPAL_ROOT,
     ];
-    if (\Drupal::service('scss_compiler')->getAdditionalImportPaths()) {
-      $import_paths = array_merge($import_paths, \Drupal::service('scss_compiler')->getAdditionalImportPaths());
+    if ($this->scssCompiler->getAdditionalImportPaths()) {
+      $import_paths = array_merge($import_paths, $this->scssCompiler->getAdditionalImportPaths());
     }
     $this->parser->setImportDirs($import_paths);
     $this->parser->setOption('import_callback', [$this, 'importCallback']);
 
     $css_folder = dirname($scss_file['css_path']);
-    if (\Drupal::service('scss_compiler')->getOption('sourcemaps')) {
+    if ($this->scssCompiler->getOption('sourcemaps')) {
       $sourcemap_file = $css_folder . '/' . $scss_file['name'] . '.css.map';
-      $host = \Drupal::request()->getSchemeAndHttpHost();
+      $host = $this->request->getSchemeAndHttpHost();
       $this->parser->setOptions([
         'sourceMap'         => TRUE,
         'sourceMapWriteTo'  => $sourcemap_file,
@@ -141,7 +141,7 @@ class LessphpCompiler implements ScssCompilerPluginInterface {
    */
   public function importCallback(\Less_Tree_Import $import) {
     if (!empty($import->path->value)) {
-      $path = \Drupal::service('scss_compiler')->replaceTokens($import->path->value);
+      $path = $this->scssCompiler->replaceTokens($import->path->value);
       if ($path) {
         $import->path->value = $path;
       }

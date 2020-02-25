@@ -114,6 +114,14 @@ function scss_compiler_form_system_performance_settings_alter(&$form, FormStateI
       }
     }
   }
+
+  $form['scss_compiler']['advanced']['node_modules_path'] = [
+    '#type' => 'textfield',
+    '#title' => t('Node modules path'),
+    '#description' => t('For example, /usr/local/lib/node_modules'),
+    '#default_value' => \Drupal::service('scss_compiler')->getOption('node_modules_path'),
+  ];
+
   $form['scss_compiler']['advanced']['plugins'] = [
     '#type' => 'fieldset',
     '#title' => t('Default compilers'),
@@ -185,6 +193,7 @@ function scss_compiler_system_performance_settings_submit(&$form, FormStateInter
     ->set('output_format', $form_state->getValue('scss_output_format'))
     ->set('check_modify_time', $form_state->getValue('scss_check_modify_time'))
     ->set('plugins', $compilers)
+    ->set('node_modules_path', $form_state->getValue('node_modules_path'))
     ->save();
 }
 
@@ -198,7 +207,7 @@ function scss_compiler_library_info_alter(&$libraries, $extension) {
   if (empty($plugins)) {
     return;
   }
-  $extensions = array_flip($plugins);
+  $extensions = array_keys($plugins);
   foreach ($libraries as &$library) {
     if (!empty($library['css'])) {
       foreach ($library['css'] as &$group) {
@@ -235,7 +244,7 @@ function scss_compiler_css_alter(&$css, AttachedAssetsInterface $assets) {
   if (empty($plugins)) {
     return;
   }
-  $extensions = array_flip($plugins);
+  $extensions = array_keys($plugins);
   foreach ($css as $path => $file) {
     if (in_array(pathinfo($path, PATHINFO_EXTENSION), $extensions)) {
       $scss_file = Drupal::service('scss_compiler')->buildCompilationFileInfo($file);

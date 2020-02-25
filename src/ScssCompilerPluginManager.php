@@ -56,15 +56,20 @@ class ScssCompilerPluginManager extends DefaultPluginManager {
       return ($this->compilers[$id]);
     }
 
-    $definitions = $this->getDefinitions();
-    if (isset($definitions[$id])) {
-      $this->compilers[$id] = $this->createInstance($id);
-    }
-    else {
-      $this->compilers[$id] = FALSE;
-    }
+    try {
+      $definitions = $this->getDefinitions();
+      if (isset($definitions[$id])) {
+        $this->compilers[$id] = $this->createInstance($id);
+      }
+      else {
+        $this->compilers[$id] = FALSE;
+      }
 
-    return $this->compilers[$id];
+      return $this->compilers[$id];
+    }
+    catch (\Exception $e) {
+      \Drupal::messenger()->addError($e->getMessage());
+    }
 
   }
 

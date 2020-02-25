@@ -243,6 +243,22 @@ class ScssCompilerService implements ScssCompilerInterface {
           $this->compile($scss_file, $flush);
         }
       }
+      $this->compileComplete();
+    }
+  }
+
+  /**
+   * Indicates that all files was compiled.
+   *
+   * Run compileQueue function if plugin supports it.
+   */
+  public function compileComplete() {
+    $plugins = $this->config->get('plugins');
+    foreach ($plugins as $plugin) {
+      $compiler = \Drupal::service('plugin.manager.scss_compiler')->getInstanceById($plugin);
+      if (method_exists($compiler, 'compileQueue')) {
+        $compiler->compileQueue();
+      }
     }
   }
 
@@ -306,10 +322,7 @@ class ScssCompilerService implements ScssCompilerInterface {
   }
 
   /**
-   * Replace path tokens into real path.
-   *
-   * @param string $path
-   *   String for replacement.
+   * {@inheritdoc}
    */
   public function replaceTokens($path) {
     // If string starts with @ replace it with the proper path.
@@ -362,10 +375,7 @@ class ScssCompilerService implements ScssCompilerInterface {
   }
 
   /**
-   * Returns addition import paths defined in hook_scss_compiler_import_paths.
-   *
-   * @return array
-   *   An array with addition paths.
+   * {@inheritdoc}
    */
   public function getAdditionalImportPaths() {
     if (isset($this->additionalImportPaths)) {
@@ -382,16 +392,16 @@ class ScssCompilerService implements ScssCompilerInterface {
   /**
    * {@inheritdoc}
    */
-  public function compile(array $scss_file, $flush = FALSE) {
+  public function compile(array $source_file, $flush = FALSE) {
     try {
-      if (!file_exists($scss_file['source_path'])) {
+      if (!file_exists($source_file['source_path'])) {
         $error_message = $this->t('File @path not found', [
-          '@path' => $scss_file['source_path'],
+          '@path' => $source_file['source_path'],
         ]);
         throw new \Exception($error_message);
       }
 
-      $extension = pathinfo($scss_file['source_path'], PATHINFO_EXTENSION);
+      $extension = pathinfo($source_file['source_path'], PATHINFO_EXTENSION);
       $plugins = $this->config->get('plugins');
       if (!empty($plugins[$extension])) {
         $compiler = \Drupal::service('plugin.manager.scss_compiler')->getInstanceById($plugins[$extension]);
@@ -404,35 +414,36 @@ class ScssCompilerService implements ScssCompilerInterface {
         throw new \Exception($error_message);
       }
 
-      // If file has local stream wrapper, replace it to relative local path.
-      // Sourcemaps contains wrong path without replacement.
-      if ($this->fileSystem->uriScheme($scss_file['source_path'])) {
-        $wrapper = \Drupal::service('stream_wrapper_manager')->getViaUri($scss_file['source_path']);
-        if ($wrapper instanceof LocalStream) {
-          $host = $this->request->getSchemeAndHttpHost();
-          $wrapper_path = $wrapper->getExternalUrl();
-          $scss_file['source_path'] = trim(str_replace($host, '', $wrapper_path), '/');
+      // Relace all local stream wrappers by real path.
+      foreach ([&$source_file['source_path'], &$source_file['css_path']] as &$path) {
+        if ($this->fileSystem->uriScheme($path)) {
+          $wrapper = \Drupal::service('stream_wrapper_manager')->getViaUri($path);
+          if ($wrapper instanceof LocalStream) {
+            $host = $this->request->getSchemeAndHttpHost();
+            $wrapper_path = $wrapper->getExternalUrl();
+            $path = trim(str_replace($host, '', $wrapper_path), '/');
+          }
         }
       }
 
-      $source_content = file_get_contents($scss_file['source_path']);
-      if ($this->config->get('check_modify_time') && !$flush && !$this->checkLastModifyTime($scss_file, $source_content)) {
+      $source_content = file_get_contents($source_file['source_path']);
+      if ($this->config->get('check_modify_time') && !$flush && !$this->checkLastModifyTime($source_file, $source_content)) {
         return;
       }
 
-      $content = $compiler->compile($scss_file);
+      $content = $compiler->compile($source_file);
       if (!empty($content)) {
-        $css_folder = dirname($scss_file['css_path']);
+        $css_folder = dirname($source_file['css_path']);
         file_prepare_directory($css_folder, FILE_CREATE_DIRECTORY);
-        file_put_contents($scss_file['css_path'], trim($content));
+        file_put_contents($source_file['css_path'], trim($content));
       }
 
     }
     catch (\Exception $e) {
       // If error occurrence during compilation, reset last modified time of the
       // file.
-      if (!empty($this->lastModifyList[$scss_file['source_path']])) {
-        $this->lastModifyList[$scss_file['source_path']] = 0;
+      if (!empty($this->lastModifyList[$source_file['source_path']])) {
+        $this->lastModifyList[$source_file['source_path']] = 0;
       }
       $this->messenger()->addError($e->getMessage());
     }

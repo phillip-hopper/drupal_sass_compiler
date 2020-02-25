@@ -2,9 +2,9 @@
 
 namespace Drupal\scss_compiler\Plugin\ScssCompiler;
 
-use Drupal\scss_compiler\ScssCompilerPluginInterface;
 use Drupal\scss_compiler\Plugin\ScssCompiler\Scssphp as Compiler;
 use ScssPhp\ScssPhp\Version;
+use Drupal\scss_compiler\ScssCompilerPluginBase;
 
 /**
  * Plugin implementation of the Scss compiler.
@@ -18,7 +18,7 @@ use ScssPhp\ScssPhp\Version;
  *   }
  * )
  */
-class ScssphpCompiler implements ScssCompilerPluginInterface {
+class ScssphpCompiler extends ScssCompilerPluginBase {
 
   /**
    * Compiler object instance.
@@ -28,9 +28,9 @@ class ScssphpCompiler implements ScssCompilerPluginInterface {
   protected $parser;
 
   /**
-   * Constructs ScssphpCompiler object.
+   * {@inheritdoc}
    */
-  public function __construct() {
+  public function init() {
 
     $status = self::getStatus();
     if ($status !== TRUE) {
@@ -38,7 +38,7 @@ class ScssphpCompiler implements ScssCompilerPluginInterface {
     }
 
     $this->parser = new Compiler();
-    $this->parser->setFormatter($this->getScssPhpFormatClass(\Drupal::service('scss_compiler')->getOption('output_format')));
+    $this->parser->setFormatter($this->getScssPhpFormatClass($this->scssCompiler->getOption('output_format')));
     // Disable utf-8 support to increase performance.
     $this->parser->setEncoding(TRUE);
 
@@ -93,8 +93,8 @@ class ScssphpCompiler implements ScssCompilerPluginInterface {
       DRUPAL_ROOT,
       [$this, 'getImportNamespace'],
     ];
-    if (\Drupal::service('scss_compiler')->getAdditionalImportPaths()) {
-      $import_paths = array_merge($import_paths, \Drupal::service('scss_compiler')->getAdditionalImportPaths());
+    if ($this->scssCompiler->getAdditionalImportPaths()) {
+      $import_paths = array_merge($import_paths, $this->scssCompiler->getAdditionalImportPaths());
     }
 
     $this->parser->setImportPaths($import_paths);
@@ -103,9 +103,9 @@ class ScssphpCompiler implements ScssCompilerPluginInterface {
     $this->parser->assetsPath = isset($scss_file['assets_path']) ? $scss_file['assets_path'] : '';
 
     $css_folder = dirname($scss_file['css_path']);
-    if (\Drupal::service('scss_compiler')->getOption('sourcemaps')) {
+    if ($this->scssCompiler->getOption('sourcemaps')) {
       $this->parser->setSourceMap(Compiler::SOURCE_MAP_FILE);
-      $host = \Drupal::request()->getSchemeAndHttpHost();
+      $host = $this->request->getSchemeAndHttpHost();
       $sourcemap_file = $css_folder . '/' . $scss_file['name'] . '.css.map';
       $this->parser->setSourceMapOptions([
         'sourceMapWriteTo'  => $sourcemap_file,

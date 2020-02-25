@@ -100,4 +100,20 @@ interface ScssCompilerInterface {
    */
   public function buildCompilationFileInfo(array $info);
 
+  /**
+   * Returns additional import paths defined in hook_scss_compiler_import_paths.
+   *
+   * @return array
+   *   An array with additional paths.
+   */
+  public function getAdditionalImportPaths();
+
+  /**
+   * Replace path tokens into real path.
+   *
+   * @param string $path
+   *   String for replacement.
+   */
+  public function replaceTokens($path);
+
 }
