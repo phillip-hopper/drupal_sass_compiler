@@ -7,20 +7,46 @@ if (!node_modules || !drupal_root || !cache_folder) {
 }
 
 const fs = require('fs');
-const sass = require(`${node_modules}/node-sass`);
+const sass = require(node_modules + '/node-sass');
 
-let files = [];
 let data = fs.readFileSync(cache_folder + '/libsass_temp.json', { encoding: 'utf-8' });
-files = JSON.parse(data);
+data = JSON.parse(data);
+
+const config = data.config;
+const files = data.files;
 
 files.forEach((file) => {
   sass.render({
     file: drupal_root + '/' + file.source_path,
+    outFile: file.css_path,
+    sourceMap:  config.sourcemaps,
+    outputStyle: config.output_format,
+    functions: {
+      'url($img)': function (img) {
+        let value = img.getValue();
+        if (['https://', 'http://', '//', 'data:'].some(v => value.startsWith(v))) {
+          return new sass.types.String('url("' + value + '")');
+        }
+        else {
+          return new sass.types.String('url("' + file.assets_path + value + '")');
+        }
+      }
+    },
   }, (err, result) => {
+    if (err) {
+      throw err;
+    }
     fs.writeFile(drupal_root + '/' + file.css_path, result.css, (err) => {
       if (err) {
         throw err;
       }
     });
+    if (result.map) {
+      fs.writeFile(drupal_root + '/' + file.css_path + '.map', result.map, (err) => {
+        if (err) {
+          throw err;
+        }
+      });
+    }
   });
 });

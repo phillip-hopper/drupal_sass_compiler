@@ -107,7 +107,7 @@ class LibsassCompiler extends ScssCompilerPluginBase {
     }
     try {
       $this->queueRun = TRUE;
-      $command = self::BASE_COMMAND . ' ' . $this->script_path;
+      $command = self::BASE_COMMAND . ' ' . $this->scriptPath;
 
       $cache_folder = $this->scssCompiler->getCacheFolder();
       $this->fileSystem->prepareDirectory($cache_folder, FileSystemInterface::CREATE_DIRECTORY);
@@ -118,15 +118,23 @@ class LibsassCompiler extends ScssCompilerPluginBase {
         $this->fileSystem->prepareDirectory($css_dir, FileSystemInterface::CREATE_DIRECTORY);
       }
 
-      $data = json_encode($files);
+      $data = [
+        'config' => [
+          'sourcemaps'    => $this->scssCompiler->getOption('sourcemaps'),
+          'output_format' => $this->scssCompiler->getOption('output_format'),
+        ],
+        'files' => $files,
+      ];
+
+      $data = json_encode($data);
       file_put_contents($cache_folder . '/libsass_temp.json', $data);
 
-      $process = new Process($command, NULL, [
+      $process = new Process($command);
+      $process->run(NULL, [
         'SCSS_COMPILER_NODE_MODULES_PATH' => $this->scssCompiler->getOption('node_modules_path'),
         'SCSS_COMPILER_DRUPAL_ROOT'       => DRUPAL_ROOT,
         'SCSS_COMPILER_CACHE_FOLDER'      => $this->fileSystem->realpath($cache_folder),
       ]);
-      $process->run();
 
       $this->fileSystem->delete($cache_folder . '/libsass_temp.json');
 
@@ -162,7 +170,7 @@ class LibsassCompiler extends ScssCompilerPluginBase {
         // Normalize @import path.
         $file_path = trim($file, '\'" ');
         $pathinfo = pathinfo($file_path);
-        $extension = '.scss';
+        $extension = '.' . pathinfo($file_path, PATHINFO_EXTENSION);
         $filename = $pathinfo['filename'];
         $dirname = $pathinfo['dirname'] === '.' ? '' : $pathinfo['dirname'] . '/';
 

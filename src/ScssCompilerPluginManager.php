@@ -58,11 +58,9 @@ class ScssCompilerPluginManager extends DefaultPluginManager {
 
     try {
       $definitions = $this->getDefinitions();
+      $this->compilers[$id] = FALSE;
       if (isset($definitions[$id])) {
         $this->compilers[$id] = $this->createInstance($id);
-      }
-      else {
-        $this->compilers[$id] = FALSE;
       }
 
       return $this->compilers[$id];

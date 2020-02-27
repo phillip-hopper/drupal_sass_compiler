@@ -92,7 +92,7 @@ abstract class ScssCompilerPluginBase extends PluginBase implements ScssCompiler
       $container->get('scss_compiler'),
       $container->get('request_stack'),
       $container->get('file_system'),
-      $container->get('module_handler'),
+      $container->get('module_handler')
     );
   }
 
