@@ -12,7 +12,7 @@ use Drupal\Core\File\FileSystemInterface;
  *
  * @ScssCompilerPlugin(
  *   id   = "scss_compiler_libsass",
- *   name = "Libsass Compiler",
+ *   name = "Libsass (Experimental)",
  *   description = "",
  *   extensions = {
  *     "scss" = "scss",
@@ -118,10 +118,18 @@ class LibsassCompiler extends ScssCompilerPluginBase {
         $this->fileSystem->prepareDirectory($css_dir, FileSystemInterface::CREATE_DIRECTORY);
       }
 
+      $import_paths = [
+        DRUPAL_ROOT,
+      ];
+      if ($this->scssCompiler->getAdditionalImportPaths()) {
+        $import_paths = array_merge($import_paths, $this->scssCompiler->getAdditionalImportPaths());
+      }
+
       $data = [
         'config' => [
           'sourcemaps'    => $this->scssCompiler->getOption('sourcemaps'),
           'output_format' => $this->scssCompiler->getOption('output_format'),
+          'import_paths'  => $import_paths,
         ],
         'files' => $files,
       ];

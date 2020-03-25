@@ -387,6 +387,7 @@ class ScssCompilerService implements ScssCompilerInterface {
     if (!is_array($this->additionalImportPaths)) {
       $this->additionalImportPaths = [];
     }
+    return $this->additionalImportPaths;
   }
 
   /**

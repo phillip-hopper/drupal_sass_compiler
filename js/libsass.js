@@ -21,6 +21,7 @@ files.forEach((file) => {
     outFile: file.css_path,
     sourceMap:  config.sourcemaps,
     outputStyle: config.output_format,
+    includePaths: config.import_paths,
     functions: {
       'url($img)': function (img) {
         let value = img.getValue();
