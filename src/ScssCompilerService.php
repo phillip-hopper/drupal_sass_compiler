@@ -415,9 +415,9 @@ class ScssCompilerService implements ScssCompilerInterface {
         throw new \Exception($error_message);
       }
 
-      // Relace all local stream wrappers by real path.
+      // Replace all local stream wrappers by real path.
       foreach ([&$source_file['source_path'], &$source_file['css_path']] as &$path) {
-        if ($this->fileSystem->uriScheme($path)) {
+        if (\Drupal::service('stream_wrapper_manager')->getScheme($path)) {
           $wrapper = \Drupal::service('stream_wrapper_manager')->getViaUri($path);
           if ($wrapper instanceof LocalStream) {
             $host = $this->request->getSchemeAndHttpHost();
@@ -435,7 +435,7 @@ class ScssCompilerService implements ScssCompilerInterface {
       $content = $compiler->compile($source_file);
       if (!empty($content)) {
         $css_folder = dirname($source_file['css_path']);
-        file_prepare_directory($css_folder, FILE_CREATE_DIRECTORY);
+        $this->fileSystem->prepareDirectory($css_folder, FileSystemInterface::CREATE_DIRECTORY);
         file_put_contents($source_file['css_path'], trim($content));
       }
 

@@ -3,6 +3,7 @@
 namespace Drupal\scss_compiler\Plugin\ScssCompiler;
 
 use Drupal\scss_compiler\ScssCompilerPluginBase;
+use Drupal\Core\File\FileSystemInterface;
 
 /**
  * Plugin implementation of the Less compiler.
@@ -94,7 +95,7 @@ class LessphpCompiler extends ScssCompilerPluginBase {
       ]);
     }
 
-    file_prepare_directory($css_folder, FILE_CREATE_DIRECTORY);
+    $this->fileSystem->prepareDirectory($css_folder, FileSystemInterface::CREATE_DIRECTORY);
     $this->parser->parseFile($scss_file['source_path'], $scss_file['assets_path']);
     $content = $this->parser->getCss();
 

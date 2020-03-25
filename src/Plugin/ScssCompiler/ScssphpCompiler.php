@@ -5,6 +5,7 @@ namespace Drupal\scss_compiler\Plugin\ScssCompiler;
 use Drupal\scss_compiler\Plugin\ScssCompiler\Scssphp as Compiler;
 use ScssPhp\ScssPhp\Version;
 use Drupal\scss_compiler\ScssCompilerPluginBase;
+use Drupal\Core\File\FileSystemInterface;
 
 /**
  * Plugin implementation of the Scss compiler.
@@ -114,9 +115,7 @@ class ScssphpCompiler extends ScssCompilerPluginBase {
         'sourceMapRootpath' => $host . '/',
       ]);
     }
-    // Use deprecated code to supports drupal 8.5.x+.
-    // @todo remove on Drupal 9.x release.
-    file_prepare_directory($css_folder, FILE_CREATE_DIRECTORY);
+    $this->fileSystem->prepareDirectory($css_folder, FileSystemInterface::CREATE_DIRECTORY);
     $source_content = file_get_contents($scss_file['source_path']);
 
     return $this->parser->compile($source_content, $scss_file['source_path']);
