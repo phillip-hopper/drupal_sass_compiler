@@ -1,6 +1,7 @@
 name: SCSS/Less Compiler
 description: Automatically compiles scss/less files into css
 package: Development
+configure: system.performance_settings
 
 type: module
 core_version_requirement: ^8.8 || ^9
