@@ -116,4 +116,9 @@ interface ScssCompilerInterface {
    */
   public function replaceTokens($path);
 
+  /**
+   * Flushes all compiler caches and reset css aggregation.
+   */
+  public function flushCache();
+
 }

@@ -32,3 +32,10 @@ function scss_compiler_requirements($phase) {
   }
   return $requirements;
 }
+
+/**
+ * Implements hook_uninstall().
+ */
+function scss_compiler_uninstall() {
+  Drupal::service('file_system')->deleteRecursive('public://scss_compiler');
+}

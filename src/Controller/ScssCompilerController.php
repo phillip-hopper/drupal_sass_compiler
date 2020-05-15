@@ -67,8 +67,7 @@ class ScssCompilerController extends ControllerBase {
    * Recompile all source files.
    */
   public function flush() {
-    $this->scssCompiler->compileAll(TRUE, TRUE);
-    $this->messenger()->addStatus(t('Compiler files recompiled.'));
+    $this->scssCompiler->flushCache();
     return new RedirectResponse($this->reloadPage());
   }
 

@@ -486,4 +486,16 @@ class ScssCompilerService implements ScssCompilerInterface {
     return FALSE;
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  public function flushCache() {
+    $this->messenger()->addStatus($this->t('Compiler files recompiled.'));
+    $this->compileAll(TRUE, TRUE);
+
+    // Reset data cache to rebuild aggregated css files.
+    \Drupal::service('cache.data')->deleteAll();
+    \Drupal::service('asset.css.collection_optimizer')->deleteAll();
+  }
+
 }
