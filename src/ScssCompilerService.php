@@ -490,7 +490,7 @@ class ScssCompilerService implements ScssCompilerInterface {
    * {@inheritDoc}
    */
   public function flushCache() {
-    $this->messenger()->addStatus($this->t('Compiler files recompiled.'));
+    $this->messenger()->addStatus($this->t('Compiler cache cleared.'));
     $this->compileAll(TRUE, TRUE);
 
     // Reset data cache to rebuild aggregated css files.

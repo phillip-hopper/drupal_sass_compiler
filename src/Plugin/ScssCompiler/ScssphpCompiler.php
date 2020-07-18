@@ -110,7 +110,7 @@ class ScssphpCompiler extends ScssCompilerPluginBase {
       $sourcemap_file = $css_folder . '/' . $scss_file['name'] . '.css.map';
       $this->parser->setSourceMapOptions([
         'sourceMapWriteTo'  => $sourcemap_file,
-        'sourceMapURL'      => file_create_url($sourcemap_file),
+        'sourceMapURL'      => $scss_file['name'] . '.css.map',
         'sourceMapBasepath' => DRUPAL_ROOT,
         'sourceMapRootpath' => $host . '/',
       ]);

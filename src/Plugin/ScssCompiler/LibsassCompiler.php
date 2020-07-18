@@ -30,6 +30,16 @@ class LibsassCompiler extends ScssCompilerPluginBase {
   const BASE_COMMAND = 'node';
 
   /**
+   * Valid hash sum of the node script.
+   */
+  const SCRIPT_HASH = 'b0f0ed985ed9a065c7ceace66b7d44a9806e9df403ec8401480f224a442baca6347de40372458810ee9b29a21cffbc71519aeb1e64179c56c4b312808bca871f';
+
+  /**
+   * Node script file size.
+   */
+  const SCRIPT_SIZE = 1485;
+
+  /**
    * Array with queued files.
    *
    * @var array
@@ -60,6 +70,11 @@ class LibsassCompiler extends ScssCompilerPluginBase {
     }
     $module_path = DRUPAL_ROOT . '/' . drupal_get_path('module', 'scss_compiler');
     $this->scriptPath = $module_path . '/js/libsass.js';
+
+    // Prevent the execution of the script if it contains changes.
+    if (hash_file('sha512', $this->scriptPath) !== self::SCRIPT_HASH || filesize($this->scriptPath) !== self::SCRIPT_SIZE) {
+      throw new \Exception($this->t('Compiler initialization failed. The execution script is modified.'));
+    }
   }
 
   /**

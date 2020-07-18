@@ -1,6 +1,6 @@
 {
   "name": "drupal/scss_compiler",
-  "description": "Automatically compiles scss files defined in libraries.yml into css.",
+  "description": "Automatically compiles scss/less files defined in libraries.yml into css.",
   "type": "drupal-module",
   "license": "GPL-2.0+",
   "homepage": "https://www.drupal.org/project/scss_compiler",
@@ -10,6 +10,7 @@
     "source": "https://git.drupalcode.org/project/scss_compiler"
   },
   "require": {
-    "scssphp/scssphp": "^1.0.0"
+    "scssphp/scssphp": "^1.0.0",
+    "drupal/core": "^8.8 || ^9"
   }
 }
