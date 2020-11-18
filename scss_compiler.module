@@ -87,9 +87,30 @@ function scss_compiler_library_info_alter(&$libraries, $extension) {
  */
 function scss_compiler_module_implements_alter(&$implementations, $hook) {
   if ($hook === 'css_alter') {
+    // Compiler adds hook_module_implements_alter to process all files which
+    // can be added by other modules. But if some module wants to run after
+    // compiler, it can't, only via module weight change, so we add our
+    // implementation before any hook_module_implements_alter. Goes thru array
+    // and check if modules in alphabetical sort, if we got any module which out
+    // of sort, add our implementation before it.
+    $module_list = array_keys($implementations);
+    $compiler_key = array_search('scss_compiler', $module_list);
+    $implements_key = count($implementations);
+
+    if ($implements_key < 2) {
+      return;
+    }
+
+    for ($i = $compiler_key; $i < count($module_list) - 1; $i++) {
+      if ($module_list[$i][0] > $module_list[$i + 1][0]) {
+        $implements_key = $i;
+      }
+    }
+
     $implementation = $implementations['scss_compiler'];
     unset($implementations['scss_compiler']);
-    $implementations['scss_compiler'] = $implementation;
+    $before = array_splice($implementations, 0, $implements_key);
+    $implementations = array_merge($before, ['scss_compiler' => $implementation], $implementations);
   }
 }
 
