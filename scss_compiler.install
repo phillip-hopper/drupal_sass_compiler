@@ -34,8 +34,24 @@ function scss_compiler_requirements($phase) {
 }
 
 /**
+ * Implements hook_install().
+ */
+function scss_compiler_install() {
+  // Set the weight to 1.
+  // @see https://www.drupal.org/project/scss_compiler/issues/3183083.
+  module_set_weight('scss_compiler', 1);
+}
+
+/**
  * Implements hook_uninstall().
  */
 function scss_compiler_uninstall() {
   Drupal::service('file_system')->deleteRecursive('public://scss_compiler');
+}
+
+/**
+ * Set the weight to 1. Added to remove hook_module_implements_alter.
+ */
+function scss_compiler_update_8001() {
+  module_set_weight('scss_compiler', 1);
 }
