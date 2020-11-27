@@ -105,6 +105,13 @@ class ScssCompilerService implements ScssCompilerInterface {
   protected $additionalImportPaths;
 
   /**
+   * Altering variables.
+   *
+   * @var \Drupal\scss_compiler\ScssCompilerAlterStorage
+   */
+  protected $variables;
+
+  /**
    * List of replacement tokens.
    *
    * @var array
@@ -388,6 +395,18 @@ class ScssCompilerService implements ScssCompilerInterface {
       $this->additionalImportPaths = [];
     }
     return $this->additionalImportPaths;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getVariables() {
+    if (isset($this->variables)) {
+      return $this->variables;
+    }
+    $this->variables = new ScssCompilerAlterStorage();
+    $this->moduleHandler->alter('scss_compiler_variables', $this->variables);
+    return $this->variables;
   }
 
   /**

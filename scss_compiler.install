@@ -50,7 +50,7 @@ function scss_compiler_uninstall() {
 }
 
 /**
- * Set the weight to 1. Added to remove hook_module_implements_alter.
+ * Set the weight to 1.
  */
 function scss_compiler_update_8001() {
   module_set_weight('scss_compiler', 1);

@@ -101,12 +101,21 @@ interface ScssCompilerInterface {
   public function buildCompilationFileInfo(array $info);
 
   /**
-   * Returns additional import paths defined in hook_scss_compiler_import_paths.
+   * Returns additional import paths defined in
+   * hook_scss_compiler_import_paths_alter.
    *
    * @return array
    *   An array with additional paths.
    */
   public function getAdditionalImportPaths();
+
+  /**
+   * Returns altering variables defined in hook_scss_compiler_variables_alter.
+   *
+   * @return \Drupal\scss_compiler\ScssCompilerAlterStorage
+   *   A storage with altering variables.
+   */
+  public function getVariables();
 
   /**
    * Replace path tokens into real path.

@@ -100,6 +100,10 @@ class ScssphpCompiler extends ScssCompilerPluginBase {
 
     $this->parser->setImportPaths($import_paths);
 
+    // Alter variables.
+    $variables = $this->scssCompiler->getVariables()->getAll($scss_file['namespace'], $scss_file['source_path']);
+    $this->parser->setVariables($variables);
+
     // Add assets path to compiler. By default it's theme/module root folder.
     $this->parser->assetsPath = isset($scss_file['assets_path']) ? $scss_file['assets_path'] : '';
 
