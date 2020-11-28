@@ -404,7 +404,7 @@ class ScssCompilerService implements ScssCompilerInterface {
     if (isset($this->variables)) {
       return $this->variables;
     }
-    $this->variables = new ScssCompilerAlterStorage();
+    $this->variables = new ScssCompilerAlterStorage($this);
     $this->moduleHandler->alter('scss_compiler_variables', $this->variables);
     return $this->variables;
   }

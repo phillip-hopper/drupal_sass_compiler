@@ -97,6 +97,11 @@ class LessphpCompiler extends ScssCompilerPluginBase {
 
     $this->fileSystem->prepareDirectory($css_folder, FileSystemInterface::CREATE_DIRECTORY);
     $this->parser->parseFile($scss_file['source_path'], $scss_file['assets_path']);
+
+    // Alter variables.
+    $variables = $this->scssCompiler->getVariables()->getAll($scss_file['namespace'], $scss_file['source_path']);
+    $this->parser->ModifyVars($variables);
+
     $content = $this->parser->getCss();
 
     return $content;

@@ -53,5 +53,15 @@ function scss_compiler_uninstall() {
  * Set the weight to 1.
  */
 function scss_compiler_update_8001() {
+  // @see https://www.drupal.org/project/scss_compiler/issues/3183083.
   module_set_weight('scss_compiler', 1);
+
+  // Setup default compiler if configuration is empty.
+  $config = Drupal::configFactory()->getEditable('scss_compiler.settings');
+  if ($config && $config->get('plugins') === NULL) {
+    $config->set('plugins', [
+      'scss' => 'scss_compiler_scssphp',
+    ]);
+    $config->save(TRUE);
+  }
 }

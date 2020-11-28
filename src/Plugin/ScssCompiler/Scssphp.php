@@ -4,6 +4,7 @@ namespace Drupal\scss_compiler\Plugin\ScssCompiler;
 
 use ScssPhp\ScssPhp\Compiler as ScssPhpCompiler;
 use ScssPhp\ScssPhp\Type;
+use ScssPhp\ScssPhp\Compiler\Environment;
 
 /**
  * Extends ScssPhp Compiler.
@@ -49,6 +50,21 @@ class Scssphp extends ScssPhpCompiler {
 
     return parent::compileValue($original_value);
 
+  }
+
+  /**
+   * Allows override variables without !default flag.
+   */
+  protected function set($name, $value, $shadow = FALSE, Environment $env = NULL, $valueUnreduced = NULL) {
+
+    if (isset($this->registeredVars[$name])) {
+      $store = $this->getStoreEnv()->store;
+      if (isset($store[$name])) {
+        $value = $store[$name];
+      }
+    }
+
+    parent::set($name, $value, $shadow, $env, $valueUnreduced);
   }
 
 }
