@@ -116,6 +116,27 @@ class ScssCompilerAlterStorage {
   }
 
   /**
+   * Removes variable from the storage.
+   *
+   * @param string $type
+   *   Storage type, file or namespace.
+   * @param string $path
+   *   Depends on the type. Module/theme name or file path.
+   * @param string $key
+   *   Key to delete. If omitted, all keys from given path will be deleted.
+   */
+  public function unset($type, $path, $key = NULL) {
+    if (isset($this->storage[$type][$path])) {
+      if ($key && isset($this->storage[$type][$path][$key])) {
+        unset($this->storage[$type][$path][$key]);
+      }
+      else {
+        unset($this->storage[$type][$path]);
+      }
+    }
+  }
+
+  /**
    * Returns entire storage.
    *
    * @return array

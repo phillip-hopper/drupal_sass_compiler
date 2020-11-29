@@ -85,13 +85,12 @@ class LessphpCompiler extends ScssCompilerPluginBase {
     $css_folder = dirname($scss_file['css_path']);
     if ($this->scssCompiler->getOption('sourcemaps')) {
       $sourcemap_file = $css_folder . '/' . $scss_file['name'] . '.css.map';
-      $host = $this->request->getSchemeAndHttpHost();
       $this->parser->setOptions([
         'sourceMap'         => TRUE,
         'sourceMapWriteTo'  => $sourcemap_file,
         'sourceMapURL'      => $scss_file['name'] . '.css.map',
         'sourceMapBasepath' => DRUPAL_ROOT,
-        'sourceMapRootpath' => $host . '/',
+        'sourceMapRootpath' => '/',
       ]);
     }
 
