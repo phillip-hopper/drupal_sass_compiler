@@ -127,8 +127,10 @@ class ScssCompilerAlterStorage {
    */
   public function unset($type, $path, $key = NULL) {
     if (isset($this->storage[$type][$path])) {
-      if ($key && isset($this->storage[$type][$path][$key])) {
-        unset($this->storage[$type][$path][$key]);
+      if ($key) {
+        if (isset($this->storage[$type][$path][$key])) {
+          unset($this->storage[$type][$path][$key]);
+        }
       }
       else {
         unset($this->storage[$type][$path]);
