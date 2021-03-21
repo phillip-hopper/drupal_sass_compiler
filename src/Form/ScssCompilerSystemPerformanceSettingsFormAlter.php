@@ -62,6 +62,17 @@ class ScssCompilerSystemPerformanceSettingsFormAlter {
       '#default_value' => $scss_compiler->getOption('output_format'),
     ];
 
+    $form['scss_compiler']['advanced']['flush_cache_type'] = [
+      '#type'     => 'select',
+      '#title'    => t('Flush cache behaviour'),
+      '#options'  => [
+        'system'  => t('Delete old files on each system flush cache'),
+        'default' => t('Delete old files on system flush cache if the compiler cache is disabled'),
+        'manual'  => t('Delete old files only on manual recompile'),
+      ],
+      '#default_value' => $scss_compiler->getOption('flush_cache_type'),
+    ];
+
     $form['scss_compiler']['advanced']['actions'] = [
       '#type' => 'actions',
       '#id'   => 'scss_compiler_actions',
@@ -96,7 +107,8 @@ class ScssCompilerSystemPerformanceSettingsFormAlter {
       '#tree' => TRUE,
     ];
     foreach ($options as $key => $option) {
-      $active = !empty($form_state->getValue('plugins')[$key]) ? $form_state->getValue('plugins')[$key] : NULL;
+      $plugins = $form_state->getValue('plugins');
+      $active = !empty($plugins[$key]) ? $plugins[$key] : NULL;
       $status = NULL;
       if (empty($active)) {
         if (!empty($scss_compiler->getOption('plugins')[$key])) {
@@ -153,6 +165,7 @@ class ScssCompilerSystemPerformanceSettingsFormAlter {
       ->set('check_modify_time', $form_state->getValue('scss_check_modify_time'))
       ->set('plugins', $compilers)
       ->set('node_modules_path', $form_state->getValue('node_modules_path'))
+      ->set('flush_cache_type', $form_state->getValue('flush_cache_type'))
       ->save();
   }
 

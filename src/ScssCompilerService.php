@@ -20,6 +20,8 @@ class ScssCompilerService implements ScssCompilerInterface {
   use StringTranslationTrait;
   use MessengerTrait;
 
+  const CACHE_FOLDER = 'public://scss_compiler';
+
   /**
    * Configuration object of scss compiler.
    *
@@ -143,7 +145,7 @@ class ScssCompilerService implements ScssCompilerInterface {
     $this->fileSystem = $file_system;
 
     $this->activeThemeName = $theme_manager->getActiveTheme()->getName();
-    $this->cacheFolder = 'public://scss_compiler';
+    $this->cacheFolder = self::CACHE_FOLDER;
     $this->isCacheEnabled = $this->config->get('cache');
     $this->tokens = [
       '@drupal_root' => '',
@@ -156,16 +158,19 @@ class ScssCompilerService implements ScssCompilerInterface {
       }
     }
 
+    // Since Drupal 9.1.4 calling a cache->set method in the class destructor
+    // causes an error.
+    if (!$this->isCacheEnabled()) {
+      register_shutdown_function([$this, 'destroy']);
+    }
   }
 
   /**
    * Saves last modify time of files to the cache.
    */
-  public function __destruct() {
-    if (!$this->isCacheEnabled()) {
-      if ($this->config->get('check_modify_time') && $this->fileIsModified) {
-        $this->cache->set('scss_compiler_modify_list', $this->lastModifyList, CacheBackendInterface::CACHE_PERMANENT);
-      }
+  public function destroy() {
+    if ($this->config->get('check_modify_time') && $this->fileIsModified) {
+      $this->cache->set('scss_compiler_modify_list', $this->lastModifyList, CacheBackendInterface::CACHE_PERMANENT);
     }
   }
 
@@ -510,8 +515,12 @@ class ScssCompilerService implements ScssCompilerInterface {
    */
   public function flushCache() {
     $this->messenger()->addStatus($this->t('Compiler cache cleared.'));
-    $this->compileAll(TRUE, TRUE);
 
+    if ($this->fileSystem->prepareDirectory($this->getCacheFolder())) {
+      $this->fileSystem->deleteRecursive($this->getCacheFolder());
+    }
+
+    $this->compileAll(TRUE, TRUE);
     // Reset data cache to rebuild aggregated css files.
     \Drupal::service('cache.data')->deleteAll();
     \Drupal::service('asset.css.collection_optimizer')->deleteAll();

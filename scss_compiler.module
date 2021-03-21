@@ -9,6 +9,7 @@ use Drupal\Core\Asset\AttachedAssetsInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\scss_compiler\Form\ScssCompilerSystemPerformanceSettingsFormAlter;
+use Drupal\scss_compiler\ScssCompilerService;
 
 /**
  * Implements hook_help().
@@ -129,11 +130,20 @@ function scss_compiler_page_attachments_alter(array &$attachments) {
  */
 function scss_compiler_cache_flush() {
   if (Drupal::hasService('scss_compiler')) {
-    if (!Drupal::service('scss_compiler')->isCacheEnabled()) {
-      $cache_folder = Drupal::service('scss_compiler')->getCacheFolder();
-      if (Drupal::service('file_system')->prepareDirectory($cache_folder)) {
-        Drupal::service('file_system')->deleteRecursive($cache_folder);
-      }
+    $config = \Drupal::config('scss_compiler.settings');
+    $flush_cache_type = $config->get('flush_cache_type');
+    switch ($flush_cache_type) {
+      case 'default':
+        if ($config->get('cache')) {
+          return;
+        }
+
+      case 'system':
+        $cache_folder = ScssCompilerService::CACHE_FOLDER;
+        if (Drupal::service('file_system')->prepareDirectory($cache_folder)) {
+          Drupal::service('file_system')->deleteRecursive($cache_folder);
+        }
+        break;
     }
   }
 }

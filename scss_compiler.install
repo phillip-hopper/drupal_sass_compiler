@@ -65,3 +65,14 @@ function scss_compiler_update_8001() {
     $config->save(TRUE);
   }
 }
+
+/**
+ * Set flush cache behaviour.
+ */
+function scss_compiler_update_8002() {
+  $config = Drupal::configFactory()->getEditable('scss_compiler.settings');
+  if ($config && $config->get('flush_cache_type') === NULL) {
+    $config->set('flush_cache_type', 'default');
+    $config->save(TRUE);
+  }
+}
