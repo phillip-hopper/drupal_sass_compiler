@@ -516,8 +516,9 @@ class ScssCompilerService implements ScssCompilerInterface {
   public function flushCache() {
     $this->messenger()->addStatus($this->t('Compiler cache cleared.'));
 
-    if ($this->fileSystem->prepareDirectory($this->getCacheFolder())) {
-      $this->fileSystem->deleteRecursive($this->getCacheFolder());
+    $cache_folder = $this->getCacheFolder();
+    if ($this->fileSystem->prepareDirectory($cache_folder)) {
+      $this->fileSystem->deleteRecursive($cache_folder);
     }
 
     $this->compileAll(TRUE, TRUE);
