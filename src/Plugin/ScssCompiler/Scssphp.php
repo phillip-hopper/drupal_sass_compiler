@@ -24,12 +24,12 @@ class Scssphp extends ScssPhpCompiler {
   /**
    * {@inheritdoc}
    */
-  public function compileValue($value) {
+  public function compileValue($value, $quote = TRUE) {
     $original_value = $value;
 
     if ($value[0] === Type::T_FUNCTION) {
       $value = $this->reduce($value);
-      $args = !empty($value[2]) ? $this->compileValue($value[2]) : '';
+      $args = !empty($value[2]) ? $this->compileValue($value[2], $quote) : '';
       if ($value[1] == 'url' && $args) {
         $args = trim($args, '"\'');
         if (substr($args, 0, 5) === 'data:') {
@@ -48,7 +48,7 @@ class Scssphp extends ScssPhpCompiler {
       }
     }
 
-    return parent::compileValue($original_value);
+    return parent::compileValue($original_value, $quote);
 
   }
 

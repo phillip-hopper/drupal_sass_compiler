@@ -59,8 +59,17 @@ class LessphpCompiler extends ScssCompilerPluginBase {
    */
   public static function getStatus() {
     $compiler_class_exists = class_exists('Less_Parser');
-    if (!$compiler_class_exists) {
+    if (!$compiler_class_exists && !file_exists(DRUPAL_ROOT . '/libraries/less.php/lessc.inc.php')) {
       $error_message = t('LessPhp Compiler library not found. Install it via composer "composer require wikimedia/less.php"');
+    }
+    // If library didn't autoload from the vendor folder, load it from the
+    // libraries folder. Added to manage the library without composer.
+    // @see https://www.drupal.org/project/scss_compiler/issues/3213427
+    if (!$compiler_class_exists) {
+      require_once DRUPAL_ROOT . '/libraries/less.php/lessc.inc.php';
+      if (version_compare(PHP_VERSION, '7.2.9', '<')) {
+        $error_message = t('LessPhp requires at least php 7.2.9');
+      }
     }
     if (!empty($error_message)) {
       return $error_message;
