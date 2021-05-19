@@ -211,7 +211,7 @@ class ScssCompilerService implements ScssCompilerInterface {
       if (!empty($data[$this->activeThemeName])) {
         $old_files = $data[$this->activeThemeName];
         if (is_array($old_files)) {
-          $files = array_merge($old_files, $files);
+          $files = array_replace_recursive($old_files, $files);
         }
       }
     }
