@@ -120,21 +120,29 @@ class LessphpCompiler extends ScssCompilerPluginBase {
    */
   public function checkLastModifyTime(array &$source_file) {
     $last_modify_time = filemtime($source_file['source_path']);
-    $source_folder = dirname($source_file['source_path']);
+    $source_folder = trim(dirname($source_file['source_path']), '/') . '/';
     $import = [];
     $content = file_get_contents($source_file['source_path']);
-    preg_match_all('/@import(.*);/', $content, $import);
+    preg_match_all('/@import.*["|\'](.*)["|\'].*;/', $content, $import);
     if (!empty($import[1])) {
       foreach ($import[1] as $file) {
         // Normalize @import path.
         $file_path = trim($file, '\'" ');
+        $replaced_path = $this->scssCompiler->replaceTokens($file_path);
+        if ($file_path !== $replaced_path) {
+          $file_path = $replaced_path;
+          $source_folder = '';
+        }
         $pathinfo = pathinfo($file_path);
+        if (empty($pathinfo['dirname'])) {
+          continue;
+        }
         $extension = '.less';
         $filename = $pathinfo['filename'];
         $dirname = $pathinfo['dirname'] === '.' ? '' : $pathinfo['dirname'] . '/';
 
-        $file_path = $source_folder . '/' . $dirname . $filename . $extension;
-        $less_path = $source_folder . '/' . $dirname . '_' . $filename . $extension;
+        $file_path = $source_folder . $dirname . $filename . $extension;
+        $less_path = $source_folder . $dirname . '_' . $filename . $extension;
 
         if (file_exists($file_path) || file_exists($file_path = $less_path)) {
           $file_modify_time = filemtime($file_path);

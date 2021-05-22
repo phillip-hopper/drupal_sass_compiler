@@ -338,6 +338,10 @@ class ScssCompilerService implements ScssCompilerInterface {
    */
   public function replaceTokens($path) {
     // If string starts with @ replace it with the proper path.
+    if( !is_string($path) ) {
+      return $path;
+    }
+
     if (substr($path, 0, 1) === '@') {
       $namespace = [];
       if (preg_match('#([^/]+)/#', $path, $namespace)) {
