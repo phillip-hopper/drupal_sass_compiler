@@ -61,7 +61,7 @@ class ScssphpCompiler extends ScssCompilerPluginBase {
   public static function getStatus() {
     $compiler_class_exists = class_exists('ScssPhp\ScssPhp\Compiler');
     if (!$compiler_class_exists && !file_exists(DRUPAL_ROOT . '/libraries/scssphp/scss.inc.php')) {
-      $error_message = t('ScssPhp Compiler library not found. Install it via composer "composer require scssphp/scssphp"');
+      return t('ScssPhp Compiler library not found. Install it via composer "composer require scssphp/scssphp"');
     }
 
     // If library didn't autoload from the vendor folder, load it from the

@@ -101,7 +101,7 @@ class LibsassCompiler extends ScssCompilerPluginBase {
    */
   public static function getStatus() {
     if (!function_exists('proc_open')) {
-      return $this->t('@function disabled.', [
+      return t('@function disabled.', [
         '@function' => 'proc_open',
       ]);
     }
