@@ -400,6 +400,8 @@ class ScssCompilerService implements ScssCompilerInterface {
 
     $this->additionalImportPaths = [];
     $this->moduleHandler->alter('scss_compiler_import_paths', $this->additionalImportPaths);
+    $activeTheme = $this->themeManager->getActiveTheme();
+    $this->themeManager->alterForTheme($activeTheme, 'scss_compiler_import_paths', $this->additionalImportPaths);
     if (!is_array($this->additionalImportPaths)) {
       $this->additionalImportPaths = [];
     }
@@ -415,6 +417,8 @@ class ScssCompilerService implements ScssCompilerInterface {
     }
     $this->variables = new ScssCompilerAlterStorage($this);
     $this->moduleHandler->alter('scss_compiler_variables', $this->variables);
+    $activeTheme = $this->themeManager->getActiveTheme();
+    $this->themeManager->alterForTheme($activeTheme, 'scss_compiler_variables', $this->variables);
     return $this->variables;
   }
 
