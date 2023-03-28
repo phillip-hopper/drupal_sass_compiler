@@ -2,6 +2,7 @@
 
 namespace Drupal\scss_compiler\Plugin\ScssCompiler;
 
+use Drupal;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Drupal\scss_compiler\ScssCompilerPluginBase;
@@ -68,7 +69,8 @@ class LibsassCompiler extends ScssCompilerPluginBase {
     if ($status !== TRUE) {
       throw new \Exception($status);
     }
-    $module_path = DRUPAL_ROOT . '/' . drupal_get_path('module', 'scss_compiler');
+
+    $module_path = DRUPAL_ROOT . '/' . Drupal::service('extension.list.module')->getPath('scss_compiler');
     $this->scriptPath = $module_path . '/js/libsass.js';
 
     // Prevent the execution of the script if it contains changes.

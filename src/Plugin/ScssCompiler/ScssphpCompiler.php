@@ -2,6 +2,7 @@
 
 namespace Drupal\scss_compiler\Plugin\ScssCompiler;
 
+use Drupal;
 use Drupal\scss_compiler\Plugin\ScssCompiler\Scssphp as Compiler;
 use ScssPhp\ScssPhp\Version;
 use Drupal\scss_compiler\ScssCompilerPluginBase;
@@ -179,11 +180,13 @@ class ScssphpCompiler extends ScssCompilerPluginBase {
     }
     $namespace_path = substr($path, strlen($match[0]));
 
-    $type = 'theme';
     if ($this->moduleHandler->moduleExists($namespace)) {
-      $type = 'module';
+      $path = @Drupal::service('extension.list.module')->getPath($namespace);
     }
-    $path = @drupal_get_path($type, $namespace);
+    else {
+      $path = @Drupal::service('extension.list.theme')->getPath($namespace);
+    }
+
     if (empty($path)) {
       return NULL;
     }

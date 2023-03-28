@@ -2,9 +2,11 @@
 
 namespace Drupal\scss_compiler;
 
+use Drupal;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Theme\ThemeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
+use Exception;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
@@ -267,7 +269,7 @@ class ScssCompilerService implements ScssCompilerInterface {
   public function compileComplete() {
     $plugins = $this->config->get('plugins');
     foreach ($plugins as $plugin) {
-      $compiler = \Drupal::service('plugin.manager.scss_compiler')->getInstanceById($plugin);
+      $compiler = Drupal::service('plugin.manager.scss_compiler')->getInstanceById($plugin);
       if (method_exists($compiler, 'compileQueue')) {
         $compiler->compileQueue();
       }
@@ -281,7 +283,7 @@ class ScssCompilerService implements ScssCompilerInterface {
     try {
       if (empty($info['data']) || empty($info['namespace'])) {
         $error_message = $this->t('Compilation file info build is failed. Required parameters are missing.');
-        throw new \Exception($error_message);
+        throw new Exception($error_message);
       }
 
       $namespace_path = $this->getNamespacePath($info['namespace']);
@@ -328,13 +330,16 @@ class ScssCompilerService implements ScssCompilerInterface {
         'css_path'    => $css_path,
       ];
     }
-    catch (\Exception $e) {
+    catch (Exception $e) {
       $this->messenger()->addError($e->getMessage());
     }
+
+    return null;
   }
 
   /**
    * {@inheritdoc}
+   * @throws Exception
    */
   public function replaceTokens($path) {
     // If string starts with @ replace it with the proper path.
@@ -378,11 +383,14 @@ class ScssCompilerService implements ScssCompilerInterface {
     if (isset($this->tokens[$namespace])) {
       return $this->tokens[$namespace];
     }
-    $type = 'theme';
-    if ($this->moduleHandler->moduleExists($namespace)) {
-      $type = 'module';
-    }
-    $path = @drupal_get_path($type, $namespace);
+
+	  if ($this->moduleHandler->moduleExists($namespace)) {
+		  $path = @Drupal::service('extension.list.module')->getPath($namespace);
+	  }
+	  else {
+		  $path = @Drupal::service('extension.list.theme')->getPath($namespace);
+	  }
+
     if (empty($path)) {
       $path = '';
     }
@@ -431,26 +439,26 @@ class ScssCompilerService implements ScssCompilerInterface {
         $error_message = $this->t('File @path not found', [
           '@path' => $source_file['source_path'],
         ]);
-        throw new \Exception($error_message);
+        throw new Exception($error_message);
       }
 
       $extension = pathinfo($source_file['source_path'], PATHINFO_EXTENSION);
       $plugins = $this->config->get('plugins');
       if (!empty($plugins[$extension])) {
-        $compiler = \Drupal::service('plugin.manager.scss_compiler')->getInstanceById($plugins[$extension]);
+        $compiler = Drupal::service('plugin.manager.scss_compiler')->getInstanceById($plugins[$extension]);
       }
 
       if (empty($compiler)) {
         $error_message = $this->t('Compiler for @extension extension not found', [
           '@extension' => $extension,
         ]);
-        throw new \Exception($error_message);
+        throw new Exception($error_message);
       }
 
       // Replace all local stream wrappers by real path.
       foreach ([&$source_file['source_path'], &$source_file['css_path']] as &$path) {
-        if (\Drupal::service('stream_wrapper_manager')->getScheme($path)) {
-          $wrapper = \Drupal::service('stream_wrapper_manager')->getViaUri($path);
+        if (Drupal::service('stream_wrapper_manager')->getScheme($path)) {
+          $wrapper = Drupal::service('stream_wrapper_manager')->getViaUri($path);
           if ($wrapper instanceof LocalStream) {
             $host = $this->request->getSchemeAndHttpHost();
             $wrapper_path = $wrapper->getExternalUrl();
@@ -472,7 +480,7 @@ class ScssCompilerService implements ScssCompilerInterface {
       }
 
     }
-    catch (\Exception $e) {
+    catch (Exception $e) {
       // If error occurrence during compilation, reset last modified time of the
       // file.
       if (!empty($this->lastModifyList[$source_file['source_path']])) {
@@ -506,7 +514,7 @@ class ScssCompilerService implements ScssCompilerInterface {
     $extension = pathinfo($source_file['source_path'], PATHINFO_EXTENSION);
     $plugins = $this->config->get('plugins');
     if (!empty($plugins[$extension])) {
-      $compiler = \Drupal::service('plugin.manager.scss_compiler')->getInstanceById($plugins[$extension]);
+      $compiler = Drupal::service('plugin.manager.scss_compiler')->getInstanceById($plugins[$extension]);
       $last_modify_time = $compiler->checkLastModifyTime($source_file);
 
       if ($last_modify_time > $this->lastModifyList[$source_file['source_path']]) {
@@ -531,8 +539,8 @@ class ScssCompilerService implements ScssCompilerInterface {
 
     $this->compileAll(TRUE, TRUE);
     // Reset data cache to rebuild aggregated css files.
-    \Drupal::service('cache.data')->deleteAll();
-    \Drupal::service('asset.css.collection_optimizer')->deleteAll();
+    Drupal::service('cache.data')->deleteAll();
+    Drupal::service('asset.css.collection_optimizer')->deleteAll();
   }
 
 }
