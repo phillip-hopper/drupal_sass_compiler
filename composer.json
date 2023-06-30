@@ -10,7 +10,7 @@
     "source": "https://git.drupalcode.org/project/scss_compiler"
   },
   "require": {
-    "scssphp/scssphp": "^1.2",
+    "scssphp/scssphp": "^1.11",
     "drupal/core": "^8.8 || ^9 || ^10"
   }
 }
